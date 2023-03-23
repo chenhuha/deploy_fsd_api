@@ -1,0 +1,264 @@
+docker_register_domain: 172.18.28.6
+docker_register_port: 5002
+offline_deb_repo_port: 9865
+system_type: "{% if ansible_architecture == 'x86_64' %}x86{% else %}{{ ansible_architecture }}{% endif %}"
+docker_namespace_name: klcloud_{{ system_type }}
+docker_image_repository: "{{ docker_register_domain }}/{{ docker_namespace_name }}"
+docker_image_tag: latest
+#配置文件目录
+config_directory: "/etc/klcloud"
+
+#部署通用版或者教育版,只能开一个
+deploy_edu: false
+deploy_comm: true
+
+###############
+# Global Config
+###############
+# 默认预留内存和 CPU
+internal_vip_address: 172.18.29.212
+external_vip_address: 172.27.123.251
+api_interface_address: "{{ 'api' | filter_address }}"
+network_address_family: "ipv4"
+api_address_family: "{{ network_address_family }}"
+reserved_host_cpus: 2
+reserved_host_memory_mb: 16384
+# 每个osd需要留2G内存
+ceph_reserved_host_memory_mb: 6
+cpu_allocation_ratio: 4
+reserved_osd_memory_mb: 4096
+reserved_mon_memory_mb: 2048
+reserved_mds_memory_mb: 2048
+reseverd_system_memory_mb: 16384
+# 系统用户名
+system_username: root
+# 系统密码
+system_password: Troila12#$
+# ipmi 厂商
+ipmi_vendor: HUAWEI
+# ipmi 连接用户名
+ipmi_username: root
+# ipmi 连接密码
+ipmi_password: Troila12#$
+host_username: root
+host_password: Troila12#$
+create_swap_file: false
+swap_file_path: /swapfile
+swap_file_block_size: 2M
+swap_file_true: 10240
+vm_swappiness: 10
+
+####################
+# Docker options
+####################
+# Valid options are [ no, on-failure, always, unless-stopped ]
+docker_restart_policy: "unless-stopped"
+# '0' means unlimited retries (applies only to 'on-failure' policy)
+docker_restart_policy_retry: "10"
+# Timeout after Docker sends SIGTERM before sending SIGKILL.
+docker_graceful_timeout: 60
+# Docker client timeout in seconds.
+docker_client_timeout: 120
+# Common options used throughout Docker
+docker_common_options:
+  restart_policy: "{{ docker_restart_policy }}"
+  restart_retries: "{{ docker_restart_policy_retry }}"
+  environment:
+    KOLLA_CONFIG_STRATEGY: "COPY_ALWAYS"
+  graceful_timeout: "{{ docker_graceful_timeout }}"
+  client_timeout: "{{ docker_client_timeout }}"
+default_container_dimensions: {}
+
+##########
+# role开关
+##########
+enable_baremetal: true
+enable_haproxy: "{% if deploy_edu | bool %}false{% else %}true{% endif %}"
+enable_keepalived: "{% if deploy_edu | bool or groups['keepalived'] | length == 1 %}false{% else %}true{% endif %}"
+enable_mariadb: true
+enable_redis: true
+enable_emqx: true
+enable_libvirt: true
+enable_trochilus: true
+enable_prometheus: true
+enable_pushgateway: "{% if deploy_edu | bool or only_deploy_voi | bool %}false{% else %}true{% endif %}"
+enable_guest_service: "{% if deploy_edu | bool or only_deploy_voi | bool %}false{% else %}true{% endif %}"
+enable_fsd: true
+enable_btserver: true
+enable_lvm: false
+enable_ceph: "{% if only_deploy_voi | bool or deploy_edu | bool %}false{% else %}true{% endif %}"
+
+##########
+# VOI 配置
+##########
+only_deploy_voi: false
+voi_storage_num: 80
+voi_data_device: "/dev/vdb"
+voi_data_directory: "{{ desktop_mount_dir }}"
+
+#################
+# Libvirt Options
+#################
+ceph_rbd_secret_uuid: e2338e01-6f82-4236-885b-056847028c77
+ceph_rbd_admin_user: client.admin
+hugepages_size: 2M
+enable_hugepages: false
+libvirt_tag: latest
+guest_service_tag: latest
+
+#################
+# Haproxy Options
+#################
+haproxy_stats_port: 1984
+haproxy_user: admin
+haproxy_password: admin
+haproxy_monitor_port: 61313
+haproxy_tag: latest
+
+####################
+# keepalived Options
+####################
+keepalived_tag: latest
+
+##############
+# Emqx Options
+##############
+emqx_default_tag: latest
+emqx_external_mqtt_port: 1883
+emqx_internal_mqtt_port: 11883
+emqx_mgmt_port: 8081
+emqx_mqttssl_port: 8883
+emqx_ws_port: 8083
+emqx_wss_port: 8084
+
+##############
+# Redis Options
+##############
+redis_tag: latest
+redis_external_server_port: 6379
+redis_internal_server_port: 16379
+redis_master_password: zhuolang@Troila@123
+redis_sentinel_port: 26379
+
+####################
+# prometheus Options
+####################
+prometheus_port: 9090
+thanos_external_query_port: 19191
+thanos_internal_query_port: 9191
+pushgateway_external_port: 9099
+pushgateway_internal_port: 19099
+thanos_sidecar_grpc_port: 19091
+thanos_sidecar_http_port: 19092
+alertmanager_external_port: 9093
+alertmanager_internal_port: 19093
+alertmanager_cluster_port: 9094
+node_exporter_port: 9100
+host_exporter_port: 9104
+docker_exporter_port: 9632
+collectd_exporter_port: 9103
+collectd_udp_port: 25826
+consul_external_port: 8500
+consul_internal_port: 18500
+prometheus_tag: latest
+
+##################
+# Mariadb Options
+##################
+mariadb_external_listen_port: 3306
+mariadb_internal_listen_port: 13306
+mariadb_wsrep_port: "4567"
+mariadb_ist_port: "4568"
+mariadb_sst_port: "4444"
+database_max_timeout: 600
+mariadb_root_password: 123456
+mariadb_root_username: root
+mariadb_default_tag: latest
+
+
+###################
+# Trochilus Options
+###################
+trochilus_support_flat_network: true
+trochilus_support_vlan_network: true
+trochilus_libvirt_driver: kvm
+trochilus_external_api_listen_port: 9001
+trochilus_internal_api_listen_port: 19001
+trochilus_external_agent_listen_port: 9002
+trochilus_internal_agent_listen_port: 19002
+trochilus_base_path: "{{ desktop_mount_dir }}"
+trochilus_voi_base_path: "{{ desktop_mount_dir }}/voi"
+trochilus_tag: latest
+virt_v2v_tag: latest
+# 如果vdi盒子和管理网不在同一个网段，就填管理网网关ip。如果vdi盒子和管理网在同一个网段，就啥也不填
+trochilus_detected_mgmt_net_ip: ""
+trochilus_ha_base_dir_path: /etc/trochilus/ha
+trochilus_dhcp_confs: /etc/trochilus/dhcp
+trochilus_enable_reserved_core: false
+trochilus_reserved_cores_num: 2
+trochilus_mariadb_username: trochilus
+trochilus_mariadb_password: 123456
+trochilus_mariadb_dataname: trochilus
+websockify_external_port: 9003
+websockify_internal_port: 19003
+websockify_tag: latest
+
+##############
+# FSD Options
+##############
+fsd_external_nginx_port: 9000
+fsd_internal_nginx_port: 19000
+fsd_external_job_port: 9011
+fsd_internal_job_port: 19011
+fsd_external_tcp_port: 9012
+fsd_internal_tcp_port: 19012
+fsd_external_tcp_file_port: 9013
+fsd_internal_tcp_file_port: 19013
+fsd_console_port: 9040
+fsd_external_main_port: 9010
+fsd_internal_main_port: 19010
+fsd_webhook_token: abc123
+fsd_default_tag: latest
+fsd_deploy_mode: all
+fsd_deploy_node_type: "{% if groups['fsd'] | length > 1 %}cluster{% else %}single{% endif %}"
+fsd_share_root_path: "{{ desktop_mount_dir }}"
+fsd_cloud_disk_root_path: "{{ fsd_share_root_path }}/111"
+proxy_ip: ""
+vdi_desktop_num: 10000
+vdi_storage_num: 1000
+cloud_disk_num: 1000
+# 平台配置的码率范围，默认1,100
+fsd_policy_codeRateRange: 1,100
+# voi 部署场景 [edu，med，common] 当deploy_edu_voi开启时 生效
+# 1. edu 教育
+# 2. med 医疗
+# 3. common 办公
+fsd_voi_version: edu
+
+tdesktop_path_name: 
+  - /opt/tdesktop/Win-TDesktop.exe
+  - /opt/tdesktop/kylin_ARM-TDesktop.deb
+  - /opt/tdesktop/UOS_ARM-TDesktop.deb
+  - /opt/tdesktop/UOS_X86-TDesktop.deb
+  - /opt/tdesktop/kylin_X86-TDesktop.deb
+
+##################
+# Samba
+##################
+samba_user: troila
+samba_passwd: Troila12
+ 
+##################
+# Btserver Options
+##################
+bt_server_external_port: 9019
+bt_server_internal_port: 19019
+bt_tracker_external_port: 9020
+bt_tracker_internal_port: 19020
+bt_download_external_port_start: 6880
+bt_download_internal_port_start: 16880
+bt_download_external_port_end: 6889
+bt_download_internal_port_end: 16889
+btserver_external_listen_ports: "{{ bt_download_external_port_start }}-{{ bt_download_external_port_end }}"
+btserver_internal_listen_ports: "{{ bt_download_internal_port_start }}-{{ bt_download_internal_port_end }}"
+btserver_tag: latest
