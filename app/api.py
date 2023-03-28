@@ -9,9 +9,10 @@ import os
 
 app = Flask(__name__)
 api = Api(app)
+app.config.from_object('config')
 
 # Configuration logger
-logfile_dir = '/var/log/deploy/'
+logfile_dir = app.config['LOG_PATH']
 
 if not os.path.isdir(logfile_dir):
     os.mkdir(logfile_dir)
@@ -38,7 +39,7 @@ class NodeCheck(Resource):
         data = []
         for node in nodes:
             code, result, _ = utils.execute(
-                constants.COMMAND_CHECK_NODE % ('Troila12#$', node['nodeIP']))
+                constants.COMMAND_CHECK_NODE % (app.config['NODE_PASS'], node['nodeIP']))
 
             data.append({'nodeIP': node['nodeIP'], 'result': result.rstrip() == constants.COMMAND_CHECK_NODE_SUCCESS and code ==0 })
 
@@ -51,4 +52,4 @@ api.add_resource(NodeCheck, '/api/deploy/node/check')
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1235, debug=True)
+    app.run(host='0.0.0.0', port=1235)
