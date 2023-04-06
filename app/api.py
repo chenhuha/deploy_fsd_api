@@ -32,6 +32,8 @@ api.add_resource(deploy.NodeCheck, '/api/deploy/node/check')
 api.add_resource(deploy.NodeSecret, '/api/deploy/node/secret')
 api.add_resource(deploy.NodeLoad, '/api/deploy/node/load')
 api.add_resource(deploy.NetCheck, '/api/deploy/node/netCheck')
+api.add_resource(deploy.ReckRecommendConfigCommon, '/api/deploy/node/reckRecommendConfigCommon')
+api.add_resource(deploy.ShowRecommendConfig, '/api/deploy/node/showRecommendConfig')
 
 if __name__ == '__main__':
     
