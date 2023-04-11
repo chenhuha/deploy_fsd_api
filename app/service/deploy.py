@@ -1,4 +1,5 @@
 import ast
+import copy
 import json
 import logging
 import paramiko
@@ -120,8 +121,8 @@ class NetCheck(Resource, Deploy):
 
         return types.DataModel().model(code=0, data=data)
 
-    def single_node_data(self, nodes, cards=[]):
-        node_list, _ = self.get_info_with_from(nodes, cards)
+    def single_node_data(self, nodes):
+        node_list, _ = self.get_info_with_from(nodes)
         result = {}
         for node in node_list:
             result = {
@@ -141,8 +142,8 @@ class NetCheck(Resource, Deploy):
         return self.combine_results(api_result, [], [])
 
 
-    def multiple_nodes_data(self, nodes, cards=[]):
-        node_list, ip_list = self.get_info_with_from(nodes, cards)
+    def multiple_nodes_data(self, nodes):
+        node_list, ip_list = self.get_info_with_from(nodes)
         all_node_output = []
 
         for i, current_node in enumerate(node_list):
@@ -365,60 +366,35 @@ class NetCheckCommon(NetCheck):
         data = {}
         nodes = self.get_nodes_from_request()
         cards = self.get_cards_from_request()
-
+        nodes = self.uniform_forma_with_nodes(nodes, cards)
+        
         if len(nodes) == 1:
-            data = self.single_node_data(nodes, cards)
+            data = self.single_node_data(nodes)
         else:
-            data = self.multiple_nodes_data(nodes, cards)
+            data = self.multiple_nodes_data(nodes)
 
         return types.DataModel().model(code=0, data=data)
 
-      def get_cards_from_request(self):
+    def get_cards_from_request(self):
         parser = reqparse.RequestParser()
         parser.add_argument('cards', required=True, location='json',
                             type=list, help='The cards field does not exist')
         
         return parser.parse_args()['cards']
     
-    def get_info_with_from(self, nodes, cards):
-        node_list = []
-        management_ip_list = []
-        storage_cluster_ip_list = []
-        storage_public_ip_list = []
-
+    def uniform_forma_with_nodes(self, nodes, cards):
         for node in nodes:
-            node_info = {}
-            node_info['management_ip'] = node['nodeIP']
-            node_info['hostname'] = node['nodeName']
-
+            node_cards = []
             for card in cards:
                 if 'MANAGEMENT' in card['purpose']:
-                    node_info['management_speed'] = card['speed']
-                    node_info['management_mtu'] = card['mtu']
-                    management_ip_list.append(node_info['management_ip'])
-                if 'STORAGEPUBLIC' in card['purpose']:
-                    node_info['storage_public_ip'] = self.get_remote_ip_address(
-                        node_info['management_ip'], card['name'])
-                    node_info['storage_public_speed'] = card['speed']
-                    node_info['storage_public_mtu'] = card['mtu']
-                    storage_public_ip_list.append(node_info['storage_public_ip'])
-                if 'STORAGECLUSTER' in card['purpose']:
-                    node_info['storage_cluster_ip'] = self.get_remote_ip_address(
-                        node_info['management_ip'], card['name'])
-                    node_info['storage_cluster_speed'] = card['speed']
-                    node_info['storage_cluster_mtu'] = card['mtu']
-                    storage_cluster_ip_list.append(node_info['storage_cluster_ip'])
+                    card['ip'] = node['nodeIP']
+                elif 'STORAGEPUBLIC' in card['purpose'] or 'STORAGECLUSTER' in card['purpose']:
+                    card['ip'] = self.get_remote_ip_address(node['nodeIP'], card['name'])
+                node_cards.append(card.copy())
+            node['cards'] = node_cards
 
-            node_list.append(node_info)
+        return nodes
 
-        ip_list = {
-            'management_ip_list':  management_ip_list,
-            'storage_cluster_ip_list': storage_cluster_ip_list,
-            'storage_public_ip_list': storage_public_ip_list
-        }
-
-        return node_list,ip_list
-    
     def get_remote_ip_address(self, remote_host, interface_name):
         cmd = "ifconfig %s | grep 'inet ' | awk '{print $2}'" % interface_name
         with paramiko.SSHClient() as ssh:
