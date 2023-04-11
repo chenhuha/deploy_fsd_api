@@ -1,4 +1,3 @@
-
 from flask import Flask
 from flask_restful import Api, Resource
 from service import deploy
@@ -34,7 +33,7 @@ api.add_resource(deploy.NodeLoad, '/api/deploy/node/load')
 api.add_resource(deploy.NetCheck, '/api/deploy/node/netCheck')
 api.add_resource(deploy.ReckRecommendConfigCommon, '/api/deploy/node/reckRecommendConfigCommon')
 api.add_resource(deploy.ShowRecommendConfig, '/api/deploy/node/showRecommendConfig')
+api.add_resource(deploy.NetCheckCommon, '/api/deploy/node/netCheck/common')
 
 if __name__ == '__main__':
-    
     app.run(host='0.0.0.0', port=2236)
