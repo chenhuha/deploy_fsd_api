@@ -1,4 +1,5 @@
-DEBUG = True
+DEBUG = None
 LOG_PATH = '/var/log/deploy/'
 DEPLOY_HOME = '/root/deploy/'
+NODE_USER = 'root'
 NODE_PASS = 'Troila12#$'
