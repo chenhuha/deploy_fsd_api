@@ -2,6 +2,7 @@ import ast
 import json
 import logging
 import paramiko
+import psutil
 
 
 from flask import current_app
@@ -366,7 +367,7 @@ class NetCheckCommon(NetCheck):
         data = {}
         nodes = self.get_nodes_from_request()
         cards = self.get_cards_from_request()
-        nodes = self.uniform_forma_with_nodes(nodes, cards)
+        nodes = self.uniform_format_with_nodes(nodes, cards)
         
         if len(nodes) == 1:
             data = self.single_node_data(nodes)
@@ -382,7 +383,7 @@ class NetCheckCommon(NetCheck):
         
         return parser.parse_args()['cards']
     
-    def uniform_forma_with_nodes(self, nodes, cards):
+    def uniform_format_with_nodes(self, nodes, cards):
         for node in nodes:
             node_cards = []
             for card in cards:
