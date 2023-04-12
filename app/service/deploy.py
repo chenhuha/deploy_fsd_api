@@ -1,5 +1,4 @@
 import ast
-import copy
 import json
 import logging
 import paramiko
@@ -25,21 +24,21 @@ class Deploy(object):
 
 class NodeCheck(Resource, Deploy):
     def post(self):
-        self._generate_ssh_key()
+        self.generate_ssh_key()
         nodes = self.get_nodes_from_request()
 
         data = []
         for node in nodes:
-            result = self._check_node(node['nodeIP'])
+            result = self.check_node(node['nodeIP'])
             data.append({'nodeIP': node['nodeIP'], 'result': result})
 
         return types.DataModel().model(code=0, data=data)
 
-    def _generate_ssh_key(self):
+    def generate_ssh_key(self):
         utils.execute(constants.COMMAND_DELETE_SSH_KEYGEN)
         utils.execute(constants.COMMAND_CREATE_SSH_KEYGEN)
 
-    def _check_node(self, node_ip):
+    def check_node(self, node_ip):
         cmd = constants.COMMAND_CHECK_NODE % (
             current_app.config['NODE_PASS'], node_ip)
         code, result, _ = utils.execute(cmd)
@@ -52,7 +51,8 @@ class NodeSecret(Resource, Deploy):
         nodes = self.get_nodes_from_request()
         data = [{'nodeIP': node['nodeIP'], 'result': True}
                 for node in nodes if self.node_secret(node)]
-        return {'code': 0, 'data': data}
+       
+        return types.DataModel().model(code=0, data=data)
 
     def node_secret(self, node):
         cmd = constants.COMMAND_SSH_COPY_ID % (
