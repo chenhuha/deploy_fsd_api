@@ -1,6 +1,8 @@
 from jinja2 import Template
 
-import subprocess
+import subprocess, re
+
+import yaml, json
 
 # 替换 yaml 文件中的值
 def render_config(filename, data_dirt):
@@ -62,3 +64,7 @@ def storagetypeformat(init_value, reduced_unit='G'):
         reduced_num = float(reduced_num) * (1024 ** power)
     return round(reduced_num, 2)
 
+def yaml_to_dict(yamlPath):
+    with open(yamlPath, encoding='UTF-8') as f:
+        datas = yaml.load(f ,Loader=yaml.FullLoader)
+    return datas
