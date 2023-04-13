@@ -1,0 +1,137 @@
+
+# 网卡配置，存在bond时，指定bond名称与对应物理网卡信息；不存在bond时，ip地址后跟随角色
+# 格式，存在bond时：nic_info = ["bond1:172.27.125.20:0011:enp125s0f1,ens5"] (bond名称:bond的IP地址:网卡角色(管理网，外网，业务网，存储网）有则为1，无则为0:组成bond的网卡名称);
+# 多个bond时，则需配置多个nic记录
+# 没有bond时：nic_info = ["enp125s0f0:172.27.125.20:1100"] (网卡名称:IP地址:网卡角色(管理网，外网，业务网，存储网）有则为1，无则为0)
+# ceph 0有ssd时: bcache_map_list=[{'cache':'/dev/nvme0n1','data':'/dev/sda /dev/sdb /dev/sdc'},{'cache':'/dev/nvme1n1','data':'/dev/sdb /dev/sdc /dev/sdd'}]
+
+[allnodes]
+# 172.27.125.20 hostname=control1 api_interface=enp125s0f0 ceph_public_interface=enp125s0f0 ceph_cluster_interface=enp125s0f0 flat_network_interface="['enp125s0f1']" vlan_network_interface="{'enp125s0f1': '1:100'}" ceph_volume_data="['/dev/vdb','/dev/vdc']" nic_info="['enp125s0f0:172.27.125.20:1100', 'enp125s0f1::0100']"
+# 172.27.125.20 hostname=control2 api_interface=enp125s0f0 ceph_public_interface=enp125s0f0 ceph_cluster_interface=enp125s0f0 flat_network_interface="['enp125s0f1']" vlan_network_interface="{'enp125s0f1': '1:100'}" ceph_volume_data="['/dev/vdb','/dev/vdc']" nic_info="['enp125s0f0:172.27.125.20:1100', 'enp125s0f1::0100']"
+# 172.27.125.20  hostname=control1  api_interface=enp125s0f0  ceph_public_interface=enp125s0f0  ceph_cluster_interface=enp125s0f0  nic_info="['enp125s0f0:172.27.125.20:1011','enp125s0f1:null:0100']" flat_network_interface="['enp125s0f1']"   ceph_volume_data="['/dev/sda','/dev/sdb','/dev/sdc','/dev/sdd']" lvm_pv_device="['/dev/nvme0n1']" vlan_network_interface="{'enp125s0f1':['1:4094']}"
+{% for node in nodes %}
+{{ node.nodeIP }} hostname={{ node.nodeName }} api_interface={{ node.managementCard }} ceph_public_interface={{ node.storagePublicCard }} ceph_cluster_interface={{ node.storageClusterCard }} flat_network_interface="{{ node.flatManagementList }}" vlan_network_interface="{{ node.vlanManagementDict }}" ceph_volume_data="{{ node.cephVolumeData }}" bcache_map_list="{{ node.cephVolumeCacheData }}" nic_info="{{ node.nicInfo }}"
+{% endfor %}
+
+
+[control]
+{% for node in nodes %}
+{% if "CONTROL" in node.nodeType %}
+{{ node.nodeIP }}
+{% endif %}
+{% endfor %}
+
+[compute]
+{% for node in nodes %}
+{% if "COMPUTE" in node.nodeType %}
+{{ node.nodeIP }}
+{% endif %}
+{% endfor %}
+
+[storage]
+{% for node in nodes %}
+{% if "STORAGE" in node.nodeType %}
+{{ node.nodeIP }}
+{% endif %}
+{% endfor %}
+
+[ceph:children]
+ceph-mons
+ceph-osds
+ceph-mdss
+ceph-mgrs
+ceph-radosgws
+
+[ceph-mons:children]
+control
+
+[ceph-osds:children]
+storage
+
+[ceph-mdss:children]
+ceph-mons
+
+[ceph-mgrs:children]
+control
+
+[ceph-radosgws:children]
+control
+
+[voi:children]
+control
+
+[baremetal:children]
+control
+compute
+storage
+
+[haproxy:children]
+control
+
+[keepalived:children]
+control
+
+[mariadb:children]
+control
+
+[redis:children]
+control
+
+[emqx:children]
+control
+
+[libvirt:children]
+compute
+
+[trochilus-api:children]
+control
+
+[trochilus-agent:children]
+compute
+
+[prometheus:children]
+control
+
+[alertmanager:children]
+control
+
+[node-exporter:children]
+control
+compute
+storage
+
+[collectd-exporter:children]
+control
+compute
+storage
+
+[host-exporter:children]
+control
+compute
+storage
+
+[docker-exporter:children]
+control
+compute
+storage
+
+[prometheus-thanos-query:children]
+control
+
+[prometheus-thanos-sidecar:children]
+control
+
+[fsd:children]
+control
+
+[guest-service:children]
+compute
+
+[websockify:children]
+control
+
+[btserver:children]
+control
+
+[btserver_tracker:children]
+control
