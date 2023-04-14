@@ -2,14 +2,13 @@ import ast
 import json
 import logging
 import paramiko
-import psutil
-
+import psutil,subprocess,uuid
 
 from flask import current_app
 from flask_restful import reqparse, Resource
 from common import constants, types, utils
 from jinja2 import Template
-import yaml
+import yaml,os
 
 
 class Deploy(object):
@@ -23,7 +22,6 @@ class Deploy(object):
         parser.add_argument('nodes', required=True, location='json',
                             type=list, help='The nodes field does not exist')
         return parser.parse_args()['nodes']
-
 
 class NodeCheck(Resource, Deploy):
     def post(self):
@@ -685,7 +683,6 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
 
     def post(self):
         nodes_info = self.get_nodes_from_request()
-        print(nodes_info)
         ceph_copy_num_default = nodes_info["cephCopyNumDefault"]
         service_type = nodes_info["serviceType"]
         nodes = nodes_info["nodes"]
@@ -696,7 +693,6 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
 
         if len(service_type) == 1 and service_type[0] == "VOI":
             only_voi_storage = self.common_voi_storage_count()
-            print(only_voi_storage)
             return types.DataModel().model(code=0, data=self.build_data({}, {}, storageSizeMax=only_voi_storage))
         else:
             pg_all = len(nodes) * len(self.ceph_data_storage) * 100
@@ -777,7 +773,6 @@ class ShowRecommendConfig(ReckRecommendConfigCommon):
 
         if len(service_type) == 1 and service_type[0] == "VOI":
             only_voi_storage = self.common_voi_storage_count()
-            print(only_voi_storage)
             return types.DataModel().model(code=0, data=self.build_data({}, {}, storageSizeMax=only_voi_storage))
         else:
             pg_all = len(self.ceph_data_storage) * 100
@@ -803,15 +798,13 @@ class Preview(Resource, DeployPreview):
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
-        for config in config_file:
-            with open(config['shellName'], 'w', encoding='UTF-8') as f:
-                f.write(config['shellContent'])
         return types.DataModel().model(code=0, data=config_file)
 
     def get(self):
         pass
 
     def file_conversion(self, previews):
+        #fsd_voi_version,deploy_edu,deploy_comm,voi_data_device 未加
         # global_var.yml文件预览
         commonFixed = previews['common']['commonFixed']
         commonCustom = previews['common']['commonCustom']
@@ -823,125 +816,13 @@ class Preview(Resource, DeployPreview):
         global_var_data['vdi_storage_num'] = commonFixed['blockStorageSize']
         global_var_data['vdi_storage_num'] = commonFixed['shareDiskSize']
         global_var_data['enable_ceph'] = commonFixed['cephServiceFlag']
-        global_var = yaml.dump(global_var_data, sort_keys=False, width=1200)
-        global_var_dict = {'shellName': 'global_vars.yaml',
-                           'shellContent': global_var}
-
-        # ceph_global_var.yml文件预览
-        ceph_global_var_data = utils.yaml_to_dict(
-            current_app.config['ETC_EXAMPLE_PATH'] + '/ceph-globals.yaml')
-        ceph_global_var_data['ceph_public_network'] = commonFixed['cephPublic']
-        ceph_global_var_data['ceph_cluster_network'] = commonFixed['cephCluster']
-        ceph_global_var_data['osd_pool_default_size'] = commonCustom['commonCustomCeph']['cephCopyNumDefault']
-        ceph_global_var_data['images_pool_pg_num'] = commonCustomPool['imagePoolPgNum']
-        ceph_global_var_data['images_pool_pgp_num'] = commonCustomPool['imagePoolPgpNum']
-        ceph_global_var_data['volumes_poll_pg_num'] = commonCustomPool['volumePoolPgNum']
-        ceph_global_var_data['volumes_poll_pgp_num'] = commonCustomPool['volumePoolPgpNum']
-        ceph_global_var_data['cephfs_pool_default_pg_num'] = commonCustomPool['cephfsPoolPgNum']
-        ceph_global_var_data['cephfs_pool_default_pgp_num'] = commonCustomPool['cephfsPoolPgpNum']
-        ceph_global_var_data['ceph_aio'] = self._aio_bool(previews['nodes'])
-        ceph_global_var_data['bcache'] = self._bcache_bool(previews['nodes'])
-        ceph_global_var = yaml.dump(ceph_global_var_data, sort_keys=False)
-        ceph_global_var_dict = {
-            'shellName': 'ceph-globals.yaml', 'shellContent': ceph_global_var}
-
-        # host 文件预览
-        host_vars = {
-            'nodeIP': "",
-            'nodeName': "",
-            'managementCard': "",
-            'storagePublicCard': "",
-            'storageClusterCard': "",
-            'nicInfo': [],
-            'flatManagementList': [],
-            'vlanManagementDict': {},
-            'cephVolumeData': [],
-            'cephVolumeCacheData': [],
-            'nodeType': []
-        }
-        nodes_info = []
-        for node in previews['nodes']:
-            host_vars1 = host_vars.copy()
-            host_vars1['nodeIP'] = node['nodeIP']
-            host_vars1['nodeName'] = node['nodeName']
-            card_info = self._netcard_classify_build(node['networkCards'])
-            host_vars1['managementCard'] = card_info['management']
-            host_vars1['storagePublicCard'] = card_info['storagePublic']
-            host_vars1['storageClusterCard'] = card_info['storageCluster']
-            host_vars1['nicInfo'] = card_info['nic']
-            host_vars1['flatManagementList'] = card_info['flat_cards']
-            host_vars1['vlanManagementDict'] = card_info['vlan_cards']
-            storage_info = self._storage_classify_build(node['storages'])
-            host_vars1['cephVolumeData'] = storage_info['ceph_volume_data']
-            host_vars1['cephVolumeCacheData'] = storage_info['ceph_volume_ceph_data']
-            host_vars1['nodeType'] = node['nodeType']
-            nodes_info.append(host_vars1)
-        host_file_print = self.host_conversion({'nodes': nodes_info})
-        host_var_dict = {'shellName': 'hosts', 'shellContent': host_file_print}
-
-        return [global_var_dict, ceph_global_var_dict, host_var_dict]
-
-    def host_conversion(self, nodes):
-        host_template_path = current_app.config['TEMPLATE_PATH'] + '/hosts.j2'
-        with open(host_template_path, 'r', encoding='UTF-8') as f:
-            data = f.read()
-        vars = Template(data).render(nodes)
-        return vars
-
-    def _aio_bool(self, nodes):
-        aio = False
-        if nodes == 1:
-            for node in nodes:
-                if len(node['storages']) == 1:
-                    aio = True
-                    break
-        return aio
-
-    def _bcache_bool(self, nodes):
-        bcache = False
-        for node in nodes:
-            for storage in node['storages']:
-                if storage['purpose'] == 'CACHE':
-                    bcache = True
-                    break
-        return bcache
-
-
-class DeployPreview(object):
-    def get_preview_from_request(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('common', required=True, location='json',
-                            type=dict, help='The common field does not exist')
-        parser.add_argument('key', required=True, location='json',
-                            type=str, help='The key field does not exist')
-        parser.add_argument('nodes', required=True, location='json',
-                            type=list, help='The nodes field does not exist')
-        parser.add_argument('serviceType', required=True, location='json',
-                            type=list, help='The serviceType field does not exist')
-        return parser.parse_args()
-
-
-class Preview(Resource, DeployPreview):
-    def post(self):
-        preview_info = self.get_preview_from_request()
-        config_file = self.file_conversion(preview_info)
-        return types.DataModel().model(code=0, data=config_file)
-
-    def get(self):
-        pass
-
-    def file_conversion(self, previews):
-        # global_var.yml文件预览
-        commonFixed = previews['common']['commonFixed']
-        commonCustom = previews['common']['commonCustom']
-        commonCustomPool = commonCustom['commonCustomPool']
-        global_var_data = utils.yaml_to_dict(
-            current_app.config['ETC_EXAMPLE_PATH'] + '/global_vars.yaml')
-        global_var_data['external_vip_address'] = commonFixed['apiVip']
-        global_var_data['voi_storage_num'] = commonFixed['voiResourceSize']
-        global_var_data['vdi_storage_num'] = commonFixed['blockStorageSize']
-        global_var_data['vdi_storage_num'] = commonFixed['shareDiskSize']
-        global_var_data['enable_ceph'] = commonFixed['cephServiceFlag']
+        if previews['deployType'] == "COMM":
+            global_var_data['deploy_comm'] = True
+            global_var_data['deploy_edu'] = False
+        elif previews['deployType'] == "EDU":
+            global_var_data['deploy_comm'] = False
+            global_var_data['deploy_edu'] = True
+        global_var_data['fsd_voi_version'] == previews['voiDeployType']
         global_var = yaml.dump(global_var_data, sort_keys=False, width=1200)
         global_var_dict = {'shellName': 'global_vars.yaml',
                            'shellContent': global_var}
@@ -1034,27 +915,41 @@ class Preview(Resource, DeployPreview):
             'storagePublic': "",
             'nic': []
         }
-        card_nic = {}
+        card_nic_dict = {
+            'name':"",
+            'role': 0,
+            'salve': ""
+        }
+        cards_nic_list = []
         for card in cards:
-            card_nic[card['name']] = 0
+            card_nic = card_nic_dict.copy()
+            card_nic['name'] = card['name']
             if 'EXTRANET' in card['purpose']:
-                card_nic[card['name']] += 4
+                card_nic['role'] += 4
                 if card['flat']:
                     card_info['flat_cards'].append(card['name'])
                 if card['vlan']:
                     card_info['vlan_cards'][card['name']] = card['externalIds']
             if 'MANAGEMENT' in card['purpose']:
-                card_nic[card['name']] += 8
+                card_nic['role'] += 8
                 card_info['management'] = card['name']
             if 'STORAGECLUSTER' in card['purpose']:
-                card_nic[card['name']] += 2
+                card_nic['role'] += 2
                 card_info['storageCluster'] = card['name']
             if 'STORAGEPUBLIC' in card['purpose']:
-                card_nic[card['name']] += 1
+                card_nic['role'] += 1
                 card_info['storagePublic'] = card['name']
-        for key, value in card_nic.items():
-            card_info['nic'].append("{}:null:{}".format(
-                key, str(bin(value)[2:].zfill(4))))
+            if card['bond']:
+                card_nic['salve'] = card['slaves']
+            cards_nic_list.append(card_nic)
+        for cards_nic in cards_nic_list:
+            if cards_nic['role'] != 0:
+                if cards_nic['salve'] == '':
+                    card_info['nic'].append("{}:null:{}".format(
+                        cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4))))
+                else:
+                    card_info['nic'].append("{}:null:{}:{}".format(
+                        cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4)),cards_nic['salve']))
 
         return card_info
 
@@ -1070,3 +965,24 @@ class Preview(Resource, DeployPreview):
                 storage_data['ceph_volume_ceph_data'].append(
                     {'cache': storage['name'], 'date': storage['cache2data']})
         return storage_data
+
+class DeployScript(Preview):
+    def post(self):
+        preview_info = self.get_preview_from_request()
+        config_file = self.file_conversion(preview_info)
+        for config in config_file:
+            with open(config['shellName'], 'w', encoding='UTF-8') as f:
+                f.write(current_app.config['ETC_EXAMPLE_PATH'] + '/' + config['shellContent'])
+        self.control_deploy(preview_info)
+        return types.DataModel().model(code=0, data="")
+
+    def control_deploy(self,previews):
+        if not os.path.exists(current_app.config['TEMPLATE_PATH'] + '/historyDeploy.yml'):
+            deploy_type = "first"
+        else:
+            deploy_type = "retry"
+        ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
+        deploy_key = previews['key']
+        deploy_uuid = uuid.uuid1()
+        cmd = [ 'sh', current_app.config['SCRIPT_PATH'] + '/setup.sh', deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid) ]
+        subprocess.Popen(cmd)
