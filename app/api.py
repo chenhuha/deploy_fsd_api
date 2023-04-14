@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_restful import Api, Resource
 from service import deploy
-
 import logging
 import os
 
@@ -37,6 +36,7 @@ api.add_resource(deploy.ShowRecommendConfig,
                  '/api/deploy/node/showRecommendConfig')
 api.add_resource(deploy.NetCheckCommon, '/api/deploy/node/netCheck/common')
 api.add_resource(deploy.Preview, '/api/deploy/preview')
+api.add_resource(deploy.DeployScript, '/api/deploy')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=2236)
