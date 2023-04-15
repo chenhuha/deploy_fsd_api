@@ -13,7 +13,7 @@ ceph_ansible_path=${deploy_path}/kubeadm-ansible/ceph-ansible
 
 #0.检测参数
 function check_param() {
-  if [ ! -n "$deploy_key" ] || [ ! -n "$deploy_type" ] || [ ! -n "$deploy_uuid" ]; then
+  if  [ ! -n "$deploy_type" ]; then
     echo "缺少必要参数，例如: bash setup.sh [deploy_key,deploy:klcloud-fsd] [deploy_type,first|retry] [deploy_uuid]"
     exit 1
   fi
@@ -108,10 +108,10 @@ function deploy() {
 
 #webhook上报所有流程并补发第1步（首次）
 function webhook_all_process_first() {
-  apt install -y curl
   #所有流程
-  json="{\"key\":\"${deploy_key}\",\"processList\":[{\"en\":\"check_param\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"检测部署脚本\"},{\"en\":\"ready_environment\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"准备部署环境\"},{\"en\":\"deploy_ceph\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"部署文件系统\"},{\"en\":\"deploy_trochilus\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"部署虚拟化系统\"}],\"uuId\":\"${deploy_uuid}\"}"
-  curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/start
+  json="[{\"en\":\"check_param\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"检测部署脚本\"},{\"en\":\"ready_environment\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"准备部署环境\"},{\"en\":\"deploy_ceph\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"部署文件系统\"},{\"en\":\"deploy_trochilus\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"部署虚拟化系统\"}]"
+  # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/start
+  echo $json > /tmp/deploy_process_status
   #补发前1步
   webhook_process "check_param" "成功" true 0 "检测部署脚本"
   echo ""
@@ -119,22 +119,27 @@ function webhook_all_process_first() {
 
 #webhook上报所有流程并补发第1步（重试）
 function webhook_all_process_retry() {
-  apt install -y curl
   #所有流程
-  json="{\"key\":\"${deploy_key}\",\"processList\":[{\"en\":\"check_param\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"检测部署脚本\"},{\"en\":\"clear_trochilus\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"清除虚拟化系统\"},{\"en\":\"clear_ceph\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"清除文件系统\"},{\"en\":\"ready_environment\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"准备部署环境\"},{\"en\":\"deploy_ceph\",\"message\":\"\",\"result\":true,\"sort\":4,\"zh\":\"部署文件系统\"},{\"en\":\"deploy_trochilus\",\"message\":\"\",\"result\":true,\"sort\":5,\"zh\":\"部署虚拟化系统\"}],\"uuId\":\"${deploy_uuid}\"}"
-  curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/start
+  json="[{\"en\":\"check_param\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"检测部署脚本\"},{\"en\":\"clear_trochilus\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"清除虚拟化系统\"},{\"en\":\"clear_ceph\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"清除文件系统\"},{\"en\":\"ready_environment\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"准备部署环境\"},{\"en\":\"deploy_ceph\",\"message\":\"\",\"result\":true,\"sort\":4,\"zh\":\"部署文件系统\"},{\"en\":\"deploy_trochilus\",\"message\":\"\",\"result\":true,\"sort\":5,\"zh\":\"部署虚拟化系统\"}]"
+  echo $json > /tmp/deploy_process_status
+  # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/start
   #补发前1步
   webhook_process "check_param" "成功" true 0 "检测部署脚本"
   echo ""
 }
 
 #webhook上报中间流程
+json_array=()
 function webhook_process() {
-  json="{\"key\":\"${deploy_key}\",\"processBO\":{\"en\":\"$1\",\"message\":\"$2\",\"result\":$3,\"sort\":$4,\"zh\":\"$5\"},\"uuId\":\"${deploy_uuid}\"}"
-  curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/middle
+  json="{\"en\":\"$1\",\"message\":\"$2\",\"result\":$3,\"sort\":$4,\"zh\":\"$5\"}"
+  # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/middle
+  json_array+=("$json")
+  json_list=$(echo "${json_array[@]}" | jq -s '.')
+  echo "$json_list" > /tmp/deploy_now_status
   echo ""
 }
 
 #Main function
 check_param
 deploy
+

@@ -1,8 +1,17 @@
-from flask import Flask
-from flask_restful import Api, Resource
-from service import deploy
 import logging
 import os
+
+from deploy.deploy_script import DeployScript
+from deploy.net_check import NetCheck, NetCheckCommon
+from deploy.node_check import NodeCheck
+from deploy.node_load import NodeLoad
+from deploy.node_secret import NodeSecret
+from deploy.preview import Preview
+from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConfig
+from deploy.status import Status
+from flask import Flask
+from flask_restful import Api, Resource
+
 
 app = Flask(__name__)
 api = Api(app)
@@ -26,18 +35,18 @@ class Version(Resource):
 
 # Actually setup the Api resource routing here
 api.add_resource(Version, '/')
-api.add_resource(deploy.NodeCheck, '/api/deploy/node/check')
-api.add_resource(deploy.NodeSecret, '/api/deploy/node/secret')
-api.add_resource(deploy.NodeLoad, '/api/deploy/node/load')
-api.add_resource(deploy.NetCheck, '/api/deploy/node/netCheck')
-api.add_resource(deploy.ReckRecommendConfigCommon,
+api.add_resource(NodeCheck, '/api/deploy/node/check')
+api.add_resource(NodeSecret, '/api/deploy/node/secret')
+api.add_resource(NodeLoad, '/api/deploy/node/load')
+api.add_resource(NetCheck, '/api/deploy/node/netCheck')
+api.add_resource(ReckRecommendConfigCommon,
                  '/api/deploy/node/reckRecommendConfigCommon')
-api.add_resource(deploy.ShowRecommendConfig,
+api.add_resource(ShowRecommendConfig,
                  '/api/deploy/node/showRecommendConfig')
-api.add_resource(deploy.NetCheckCommon, '/api/deploy/node/netCheck/common')
-api.add_resource(deploy.Preview, '/api/deploy/preview')
-api.add_resource(deploy.DeployScript, '/api/deploy')
-api.add_resource(deploy.Status, '/api/deploy/status')
+api.add_resource(NetCheckCommon, '/api/deploy/node/netCheck/common')
+api.add_resource(Preview, '/api/deploy/preview')
+api.add_resource(DeployScript, '/api/deploy')
+api.add_resource(Status, '/api/deploy/status')
 
 
 if __name__ == '__main__':
