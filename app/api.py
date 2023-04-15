@@ -34,6 +34,8 @@ api.add_resource(deploy.NetCheck, '/api/deploy/node/netCheck')
 api.add_resource(deploy.ReckRecommendConfigCommon, '/api/deploy/node/reckRecommendConfigCommon')
 api.add_resource(deploy.ShowRecommendConfig, '/api/deploy/node/showRecommendConfig')
 api.add_resource(deploy.NetCheckCommon, '/api/deploy/node/netCheck/common')
+api.add_resource(deploy.Status, '/api/deploy/status')
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=2236)
