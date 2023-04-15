@@ -37,6 +37,8 @@ api.add_resource(deploy.ShowRecommendConfig,
 api.add_resource(deploy.NetCheckCommon, '/api/deploy/node/netCheck/common')
 api.add_resource(deploy.Preview, '/api/deploy/preview')
 api.add_resource(deploy.DeployScript, '/api/deploy')
+api.add_resource(deploy.Status, '/api/deploy/status')
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=2236)
