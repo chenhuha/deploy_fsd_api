@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_restful import Api, Resource
 from service import deploy
-
 import logging
 import os
 
@@ -31,9 +30,13 @@ api.add_resource(deploy.NodeCheck, '/api/deploy/node/check')
 api.add_resource(deploy.NodeSecret, '/api/deploy/node/secret')
 api.add_resource(deploy.NodeLoad, '/api/deploy/node/load')
 api.add_resource(deploy.NetCheck, '/api/deploy/node/netCheck')
-api.add_resource(deploy.ReckRecommendConfigCommon, '/api/deploy/node/reckRecommendConfigCommon')
-api.add_resource(deploy.ShowRecommendConfig, '/api/deploy/node/showRecommendConfig')
+api.add_resource(deploy.ReckRecommendConfigCommon,
+                 '/api/deploy/node/reckRecommendConfigCommon')
+api.add_resource(deploy.ShowRecommendConfig,
+                 '/api/deploy/node/showRecommendConfig')
 api.add_resource(deploy.NetCheckCommon, '/api/deploy/node/netCheck/common')
+api.add_resource(deploy.Preview, '/api/deploy/preview')
+api.add_resource(deploy.DeployScript, '/api/deploy')
 api.add_resource(deploy.Status, '/api/deploy/status')
 
 
