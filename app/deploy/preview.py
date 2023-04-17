@@ -17,6 +17,10 @@ class DeployPreview(object):
                             type=list, help='The nodes field does not exist')
         parser.add_argument('serviceType', required=True, location='json',
                             type=list, help='The serviceType field does not exist')
+        parser.add_argument('deployType', required=True, location='json',
+                            type=str, help='The deployType field does not exist')
+        parser.add_argument('voiDeployType', location='json',
+                            type=str, help='The voiDeployType field does not exist')
         return parser.parse_args()
 
 

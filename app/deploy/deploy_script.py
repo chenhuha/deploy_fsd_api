@@ -1,10 +1,14 @@
 import os
+import json,yaml
 import subprocess
+import time
 
 from common import types
 from deploy.preview import Preview
 from flask import current_app
-from uuid import uuid5
+from uuid import uuid1
+from threading import Thread
+from deploy.status import Status
 
 
 class DeployScript(Preview):
@@ -16,16 +20,40 @@ class DeployScript(Preview):
                 f.write(
                     current_app.config['ETC_EXAMPLE_PATH'] + '/' + config['shellContent'])
         self.control_deploy(preview_info)
+        # thread = Thread(target=self.control_deploy, args=(preview_info,current_app._get_current_object()))
+        # thread.start()
         return types.DataModel().model(code=0, data="")
 
     def control_deploy(self, previews):
-        if not os.path.exists(current_app.config['TEMPLATE_PATH'] + '/historyDeploy.yml'):
+        # time.sleep(3)
+        if not os.path.exists(current_app.config['DEPLOY_HOME'] + '/historyDeploy.yml'):
             deploy_type = "first"
         else:
             deploy_type = "retry"
         ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
         deploy_key = previews['key']
-        deploy_uuid = uuid5.uuid1()
-        cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/setup.sh',
-               deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
-        subprocess.Popen(cmd)
+        deploy_uuid = str(uuid1())
+        cmd = ['sh', current_app.config['DEPLOY_HOME'] + '/setup.sh',
+            deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
+        results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        thread = Thread(target=self._shell_return_listen, args=(current_app._get_current_object(),results,previews,deploy_uuid,int(time.time() * 1000)))
+        thread.start()
+            # self._shell_return_listen(results,previews,deploy_uuid,int(time.time() * 1000))
+
+    def _shell_return_listen(self, app, subprocess_1, previews,deploy_uuid,start_time):
+        with app.app_context():
+            subprocess_1.wait()
+            status_results = Status.get_now_list(self)
+            end_results = status_results[-1]
+            results = types.DataModel().history_model(
+                log=str(subprocess_1.stdout.read(), encoding='utf-8'),
+                paramsJson=json.dumps(previews),
+                uuid = deploy_uuid,
+                startTime= start_time,
+                message=end_results['message'],
+                result=end_results['result']
+                )
+            results_yaml = yaml.dump(results,sort_keys=False,allow_unicode=True)
+            with open(current_app.config['DEPLOY_HOME'] + '/historyDeploy.yml', 'w+', encoding='UTF-8') as f:
+                f.write(results_yaml)
+

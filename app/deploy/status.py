@@ -34,7 +34,7 @@ class Status(Resource):
 
     def get_now_list(self):
         try:
-            with open('/tmp/deploy_now_status', 'r') as f:
+            with open('/tmp/deploy_now_status', 'r', encoding='utf-8') as f:
                 content = f.read()
                 data = json.loads(content)
         except Exception:
@@ -44,7 +44,7 @@ class Status(Resource):
 
     def get_process_list(self):
         try:
-            with open('/tmp/deploy_process_status', 'r') as f:
+            with open('/tmp/deploy_process_status', 'r', encoding='utf-8') as f:
                 content = f.read()
                 data = json.loads(content)
         except Exception:
