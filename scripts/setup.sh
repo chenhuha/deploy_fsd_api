@@ -50,8 +50,8 @@ function deploy() {
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "deploy_trochilus" "成功" true 3 "部署虚拟化系统"
     else
-      webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 3 "部署虚拟化系统"
-      exit 1
+    webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 3 "部署虚拟化系统"
+    exit 1
     fi
     exit 0
   fi
@@ -135,6 +135,7 @@ function webhook_process() {
   # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/middle
   json_array+=("$json")
   json_list=$(echo "${json_array[@]}" | jq -s '.')
+  echo "$json_list" > /dev/null
   echo "$json_list" > /tmp/deploy_now_status
   echo ""
 }

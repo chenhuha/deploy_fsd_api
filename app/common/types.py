@@ -3,7 +3,7 @@ import time,json
 
 
 class DataModel:
-    def model(self, code, data, message="", path=""):
+    def model(self, code, data, message=None, path=None):
         return jsonify({
             'timestamp': int(time.time() * 1000),
             'state': 200,
