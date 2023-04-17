@@ -50,7 +50,7 @@ class NetCheck(Resource, Node):
                     current_node['management_ip'], node_ip, port)
                 return self.output_format_different_node(output, node_list)
             except Exception as e:
-                self._logger.error('get iperf3_client output faild, %s', e)
+                self._logger.error('get iperf3_client output failed, %s', e)
                 return self.output_format_null_node(current_node, node, type)
 
         # execute iperf3 client and collect results
