@@ -45,7 +45,7 @@ class Status(Resource, Node):
 
     def get_process_list(self):
         try:
-            with open('/tmp/deploy_process_status', 'r',  encoding='utf-8') as f:
+            with open('/tmp/deploy_process_status', 'r', encoding='utf-8') as f:
                 content = f.read()
                 data = json.loads(content)
         except Exception as e:
