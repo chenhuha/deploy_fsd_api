@@ -33,12 +33,17 @@ class DeployScript(Preview):
         ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
         deploy_key = previews['key']
         deploy_uuid = str(uuid1())
+        results = types.DataModel().history_model(
+            paramsJson=json.dumps(previews),
+            uuid = deploy_uuid,
+            startTime= int(time.time() * 1000)
+            )
+        self._write_history_file(results)
         cmd = ['sh', current_app.config['DEPLOY_HOME'] + '/setup.sh',
             deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
         results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         thread = Thread(target=self._shell_return_listen, args=(current_app._get_current_object(),results,previews,deploy_uuid,int(time.time() * 1000)))
         thread.start()
-            # self._shell_return_listen(results,previews,deploy_uuid,int(time.time() * 1000))
 
     def _shell_return_listen(self, app, subprocess_1, previews,deploy_uuid,start_time):
         with app.app_context():
@@ -53,7 +58,10 @@ class DeployScript(Preview):
                 message=end_results['message'],
                 result=end_results['result']
                 )
-            results_yaml = yaml.dump(results,sort_keys=False,allow_unicode=True)
-            with open(current_app.config['DEPLOY_HOME'] + '/historyDeploy.yml', 'w+', encoding='UTF-8') as f:
-                f.write(results_yaml)
+            self._write_history_file(results)
+
+    def _write_history_file(self, result):
+        results_yaml = yaml.dump(result,sort_keys=False,allow_unicode=True)
+        with open(current_app.config['DEPLOY_HOME'] + '/historyDeploy.yml', 'w', encoding='UTF-8') as f:
+            f.write(results_yaml)
 

@@ -12,7 +12,7 @@ class DataModel:
             'path': path,
             'data': data
         })
-    def history_model(self, paramsJson, log,result,startTime, message="" ,key="deploy:klcloud-fsd", id=1, uuid=""):    
+    def history_model(self, startTime, paramsJson, log="",result="", message="" ,key="deploy:klcloud-fsd", id=1, uuid=""):    
         return {
             'paramsJson': paramsJson,
             'log': log,
