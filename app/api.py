@@ -1,7 +1,7 @@
 import logging
 import os
-from deploy.deploy_history import DeployHistory
 
+from deploy.deploy_history import DeployHistory
 from deploy.deploy_script import DeployScript
 from deploy.net_check import NetCheck, NetCheckCommon
 from deploy.node_check import NodeCheck

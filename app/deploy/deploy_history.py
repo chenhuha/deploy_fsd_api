@@ -14,6 +14,11 @@ class DeployHistory(Resource):
     
         return types.DataModel().model(code=0, data=data)
     
+    def delete(self):
+        data = self.del_deploy_history()
+    
+        return types.DataModel().model(code=0, data=data)
+
     def get_deploy_history(self):
         history_file = self.deploy_home + '/historyDeploy.yml'
 
@@ -28,3 +33,11 @@ class DeployHistory(Resource):
             data = []
 
         return data
+    
+    def del_deploy_history(self):
+        history_file = self.deploy_home + '/historyDeploy.yml'
+
+        if os.path.isfile(history_file):
+            os.remove(history_file)
+
+        return None
