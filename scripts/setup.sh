@@ -5,7 +5,7 @@
 deploy_key=$1
 deploy_type=$2
 deploy_uuid=$3
-=$4
+deploy_ceph_flag=$4
 deploy_path=/root/deploy
 etc_example_path=${deploy_path}/kly-deploy/etc_example
 ansible_path=${deploy_path}/kly-deploy/ansible
