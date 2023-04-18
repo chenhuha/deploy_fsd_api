@@ -1,6 +1,7 @@
 import logging
 import os
 
+from deploy.deploy_history import DeployHistory
 from deploy.deploy_script import DeployScript
 from deploy.net_check import NetCheck, NetCheckCommon
 from deploy.node_check import NodeCheck
@@ -47,6 +48,7 @@ api.add_resource(NetCheckCommon, '/api/deploy/node/netCheck/common')
 api.add_resource(Preview, '/api/deploy/preview')
 api.add_resource(DeployScript, '/api/deploy')
 api.add_resource(Status, '/api/deploy/status')
+api.add_resource(DeployHistory, '/api/deploy/history')
 
 
 if __name__ == '__main__':
