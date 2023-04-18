@@ -52,6 +52,10 @@ class Preview(Resource, DeployPreview):
         elif previews['deployType'] == "EDU":
             global_var_data['deploy_comm'] = False
             global_var_data['deploy_edu'] = True
+        if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
+            global_var_data['only_deploy_voi'] = True
+        else:
+            global_var_data['only_deploy_voi'] = False
         global_var_data['fsd_voi_version'] == previews['voiDeployType']
         global_var = yaml.dump(global_var_data, sort_keys=False, width=1200)
         global_var_dict = {'shellName': 'global_vars.yaml',
