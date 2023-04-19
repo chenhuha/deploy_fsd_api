@@ -7,8 +7,10 @@ from flask_restful import Resource
 class NodeSecret(Resource, Node):
     def post(self):
         nodes = self.get_nodes_from_request()
-        data = [{'nodeIP': node['nodeIP'], 'result': True}
-                for node in nodes if self.node_secret(node)]
+        data = []
+        for node in nodes:
+            result = self.node_secret(node)
+            data.append({'nodeIP': node['nodeIP'], 'result': result})   
        
         return types.DataModel().model(code=0, data=data)
 

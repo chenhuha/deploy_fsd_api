@@ -11,12 +11,14 @@ from deploy.preview import Preview
 from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConfig
 from deploy.status import Status
 from flask import Flask
+from flask_cors import CORS
 from flask_restful import Api, Resource
 
 
 app = Flask(__name__)
 api = Api(app)
 app.config.from_object('config')
+CORS(app, supports_credentials=True)
 
 # Configuration logger
 logfile_dir = app.config['LOG_PATH']
@@ -52,4 +54,4 @@ api.add_resource(DeployHistory, '/api/deploy/history')
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2236)
+    app.run(host='0.0.0.0', port=1236)
