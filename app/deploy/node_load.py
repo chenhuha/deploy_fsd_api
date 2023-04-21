@@ -11,7 +11,7 @@ class NodeLoad(Resource, Node):
     def __init__(self) -> None:
         super().__init__()
         self.nodes = self.get_nodes_from_request()
-        self.deploy_home = current_app.config['DEPLOY_HOME']
+        self.script_path = current_app.config['SCRIPT_PATH']
 
     def post(self):
         data = self.get_device_info()
@@ -33,7 +33,7 @@ class NodeLoad(Resource, Node):
         return data
 
     def execute_device_script(self, node, data, done_event):
-        cmd = f"sh {self.deploy_home}/device.sh {node['nodeIP']}"
+        cmd = f"sh {self.script_path}/device.sh {node['nodeIP']}"
         try:
             _, result, _ = utils.execute(cmd)
         except Exception as e:

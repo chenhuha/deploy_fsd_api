@@ -1,7 +1,9 @@
 import logging
 import os
 
+from deploy.deploy_export import DeployExport
 from deploy.deploy_history import DeployHistory
+from deploy.deploy_log import DeployLog
 from deploy.deploy_script import DeployScript
 from deploy.net_check import NetCheck, NetCheckCommon
 from deploy.node_check import NodeCheck
@@ -52,8 +54,10 @@ api.add_resource(Preview, '/api/deploy/preview')
 api.add_resource(DeployScript, '/api/deploy')
 api.add_resource(Status, '/api/deploy/status')
 api.add_resource(DeployHistory, '/api/deploy/history')
+api.add_resource(DeployExport, '/api/deploy/export')
+api.add_resource(DeployLog, '/api/deploy/download')
 api.add_resource(Upload, '/api/upgrade/upload')
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1236)
+    app.run(host='0.0.0.0', port=2236)

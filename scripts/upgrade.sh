@@ -4,11 +4,11 @@
 upgrade_path=$1
 version=$2
 
-
 deploy_path=/root/deploy
 etc_example_path=${deploy_path}/kly-deploy/etc_example
 ansible_path=${upgrade_package_path}/upgrade_resource/kly-deploy/ansible
 ceph_ansible_path=${deploy_path}/kly-deploy/ceph-ansible
+
 
 # 检测参数
 function check_param() {
@@ -23,34 +23,34 @@ function deploy_upgrade_program() {
   mv ${deploy_path}/kly-deploy-api ${deploy_path}/kly-deploy-api_${version}
   cp -r ${upgrade_path}/kly-deploy-api ${deploy_path}/kly-deploy-api
   if [ -d "${deploy_path}/kly-deploy-api" ]; then
-    systemctl restart kly-deploy-api
+    systemctl daemon-reload && systemctl restart kly-deploy-api
   else
-    process "deploy_upgrade_program" "执行升级程序失败" false 3 "执行升级程序"
+    process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
     exit 1
   fi
 
   # 服务升级
   ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/95-upgrade.yaml>> /var/log/upgrade.log 2>&1
   if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
-    process "deploy_upgrade_program" "成功" true 3 "部署虚拟化系统"
+    process "deploy_upgrade_program" "升级程序执行成功" true 2 "执行升级程序"
   else
-    process "deploy_upgrade_program" "执行升级程序失败" false 3 "执行升级程序"
+    process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
     exit 1
   fi
 }
 
 function check_service_status() {
-  ports=(9001 9002 9003 9004)
+  ports=(9000 9001 9002 9003 9010 9012 9019 9020 9090 9093)
 
   for port in "${ports[@]}"
   do
     if ! netstat -an | grep -w "$port" >/dev/null
     then
-      process "check_service_status" "Port $port is not in use" false 4 "检测环境状态失败"
+      process "check_service_status" "Port $port is not in use" false 3 "检测环境状态失败"
       exit 1
     fi
   done
-  process "check_service_status" "Port $port is not in use" true 4 "检测环境状态成功"
+  process "check_service_status" "检测环境状态成功" true 3 "检测环境状态成功"
   }
 
 # 上报所有流程
@@ -74,9 +74,9 @@ function process() {
   echo ""
 }
 
-# check_param
-# all_process
-# process "unzip_upgrade_package" "成功" true 0 "解压升级包成功"
-# process "backup_data" "成功" true 0 "备份数据库成功"
-# deploy_upgrade_program
+check_param
+all_process
+process "unzip_upgrade_package" "成功" true 0 "解压升级包成功"
+process "backup_data" "成功" true 1 "备份数据库成功"
+deploy_upgrade_program
 check_service_status

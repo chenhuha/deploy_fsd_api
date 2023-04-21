@@ -25,7 +25,7 @@ class NetCheck(Resource, Node):
             result = {
                 'sourceIp': node['management_ip'],
                 'sourceHostname': node['hostname'],
-                'destIP': node['management_ip'],
+                'destIp': node['management_ip'],
                 'destHostname': node['hostname'],
                 'speed': node['management_speed'],
                 'realSpeed': '-',
@@ -135,7 +135,7 @@ class NetCheck(Resource, Node):
         result = {
             'sourceIp': source_ip,
             'sourceHostname': source_hostname,
-            'destIP': dest_ip,
+            'destIp': dest_ip,
             'destHostname': dest_hostname,
             'speed': speed,
             'realSpeed': real_speed,
@@ -165,7 +165,7 @@ class NetCheck(Resource, Node):
         result = {
             'sourceIp': local_host,
             'sourceHostname': source_hostname,
-            'destIP': remote_host,
+            'destIp': remote_host,
             'destHostname': dest_hostname,
             'speed': speed,
             'realSpeed': real_speed,
@@ -190,7 +190,7 @@ class NetCheck(Resource, Node):
         result = {
             'sourceIp': source_ip,
             'sourceHostname': source_hostname,
-            'destIP': dest_ip,
+            'destIp': dest_ip,
             'destHostname': dest_hostname,
             'speed': speed,
             'realSpeed': real_speed,
@@ -272,6 +272,10 @@ class NetCheck(Resource, Node):
             return 2
 
         return 0
+
+    # 数据持久化
+    def data_save(self):
+        pass
 
 
 class NetCheckCommon(NetCheck):
