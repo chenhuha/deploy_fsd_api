@@ -9,6 +9,8 @@ class Node(object):
         self._logger = logging.getLogger(__name__)
         self.username = current_app.config['NODE_USER']
         self.password = current_app.config['NODE_PASS']
+        self.deploy_home = current_app.config['DEPLOY_HOME']
+        self.template_path = current_app.config['TEMPLATE_PATH']
 
     def get_nodes_from_request(self):
         parser = reqparse.RequestParser()
