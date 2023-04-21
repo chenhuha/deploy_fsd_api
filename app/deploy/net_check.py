@@ -1,5 +1,6 @@
 import json
 import paramiko
+import openpyxl
 
 from common import types
 from deploy.node_base import Node
@@ -16,8 +17,12 @@ class NetCheck(Resource, Node):
         else:
             data = self.multiple_nodes_data(nodes)
 
-        return types.DataModel().model(code=0, data=data)
+        file_path = f"{self.deploy_home}/deploy_node_info.xlsx" 
+        self.write_data_to_excel(file_path, data)
 
+        return types.DataModel().model(code=0, data=data)
+    
+    # 单节点 
     def single_node_data(self, nodes):
         node_list = self.get_info_with_from(nodes)
         result = {}
@@ -38,6 +43,7 @@ class NetCheck(Resource, Node):
 
         return self.combine_results(api_result, [], [])
 
+    # 多节点
     def multiple_nodes_data(self, nodes):
         node_list = self.get_info_with_from(nodes)
         api_result = []
@@ -77,6 +83,7 @@ class NetCheck(Resource, Node):
 
         return self.combine_results(api_result, ceph_cluster_result, ceph_public_result)
 
+    # 处理前端传来的数据
     def get_info_with_from(self, nodes):
         node_list = []
 
@@ -121,6 +128,7 @@ class NetCheck(Resource, Node):
             data = stdout.read().decode()
         return data
 
+    # 处理相同节点的数据
     def output_format_same_node(self, node, card_purpose):
         source_ip = node[f"{card_purpose}_ip"]
         source_hostname = node["hostname"]
@@ -146,6 +154,7 @@ class NetCheck(Resource, Node):
 
         return result
 
+    # 处理 iperf 返回的数据
     def output_format_different_node(self, result, node_list):
         json_data = json.loads(result)
 
@@ -274,8 +283,25 @@ class NetCheck(Resource, Node):
         return 0
 
     # 数据持久化
-    def data_save(self):
-        pass
+    def write_data_to_excel(self, filepath, data):
+        workbook = openpyxl.load_workbook(filepath)
+        worksheet = workbook.active
+        start_num = 3
+        
+        status_map = {0: '正常', 1: '异常', 2: '警告'}
+        card_name_map = {'apiResult': '管理网',
+                        'cephPublicResult': '存储公网',
+                        'cephClusterResult': '存储集群网'}
+        for card_name, card_data in data.items():
+            card_title = card_name_map.get(card_name, card_name)
+            for item in card_data:
+                worksheet.cell(row=start_num, column=1, value=card_title)
+                worksheet.cell(row=start_num, column=2, value=item['sourceIp'])
+                worksheet.cell(row=start_num, column=3, value=item['destIp'])
+                worksheet.cell(row=start_num, column=4, value=status_map.get(item['status'], ''))
+                worksheet.cell(row=start_num, column=5, value=str(item))
+                start_num += 1
+        workbook.save(filepath)
 
 
 class NetCheckCommon(NetCheck):
