@@ -12,10 +12,11 @@ from deploy.node_secret import NodeSecret
 from deploy.preview import Preview
 from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConfig
 from deploy.status import Status
+from upgrade.upload import Upload
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource
-
+from flask_cors import CORS
 
 app = Flask(__name__)
 api = Api(app)
@@ -55,6 +56,7 @@ api.add_resource(Status, '/api/deploy/status')
 api.add_resource(DeployHistory, '/api/deploy/history')
 api.add_resource(DeployExport, '/api/deploy/export')
 api.add_resource(DeployLog, '/api/deploy/download')
+api.add_resource(Upload, '/api/upgrade/upload')
 
 
 if __name__ == '__main__':

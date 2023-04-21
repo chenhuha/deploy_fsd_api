@@ -17,9 +17,8 @@ class DeployScript(Preview, Node):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
         for config in config_file:
-            with open(config['shellName'], 'w', encoding='UTF-8') as f:
-                f.write(
-                    current_app.config['ETC_EXAMPLE_PATH'] + '/' + config['shellContent'])
+            with open(current_app.config['ETC_EXAMPLE_PATH'] + config['shellName'], 'w', encoding='UTF-8') as f:
+                f.write(config['shellContent'])
         self.control_deploy(preview_info)
         # thread = Thread(target=self.control_deploy, args=(preview_info,current_app._get_current_object()))
         # thread.start()
