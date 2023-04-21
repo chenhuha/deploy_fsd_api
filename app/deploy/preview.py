@@ -31,7 +31,13 @@ class Preview(Resource, DeployPreview):
         return types.DataModel().model(code=0, data=config_file)
 
     def get(self):
-        pass
+        file_list = ["ceph-globals.yaml", "global_vars.yaml", "hosts"]
+        global_vars_data = []
+        for file in file_list:
+            with open(current_app.config['ETC_EXAMPLE_PATH'] + file, 'r') as f:
+                global_vars_data.append({'shellName': file,
+                           'shellContent': f.read()})
+        return types.DataModel().model(code=0, data=global_vars_data)
 
     def file_conversion(self, previews):
         #fsd_voi_version,deploy_edu,deploy_comm,voi_data_device 未加
@@ -124,7 +130,7 @@ class Preview(Resource, DeployPreview):
 
     def _aio_bool(self, nodes):
         aio = False
-        if nodes == 1:
+        if len(nodes) == 1:
             for node in nodes:
                 if len(node['storages']) == 1:
                     aio = True
@@ -197,5 +203,5 @@ class Preview(Resource, DeployPreview):
                 storage_data['ceph_volume_data'].append(storage['name'])
             elif storage['purpose'] == 'CACHE':
                 storage_data['ceph_volume_ceph_data'].append(
-                    {'cache': storage['name'], 'date': storage['cache2data']})
+                    {'cache': storage['name'], 'date': storage['cache2data'].join(' ')})
         return storage_data
