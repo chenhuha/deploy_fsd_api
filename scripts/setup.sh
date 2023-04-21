@@ -7,9 +7,10 @@ deploy_type=$2
 deploy_uuid=$3
 deploy_ceph_flag=$4
 deploy_path=/root/deploy
-etc_example_path=${deploy_path}/kubeadm-ansible/etc_example
-ansible_path=${deploy_path}/kubeadm-ansible/ansible
-ceph_ansible_path=${deploy_path}/kubeadm-ansible/ceph-ansible
+etc_example_path=${deploy_path}/kly-deploy/etc_example
+ansible_path=${deploy_path}/kly-deploy/ansible
+ceph_ansible_path=${deploy_path}/kly-deploy/ceph-ansible
+
 
 #0.检测参数
 function check_param() {
@@ -25,6 +26,7 @@ function deploy() {
     #发送webhook
     webhook_all_process_first
     #准备部署环境
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml > /var/log/deploy.log 2>&1
     ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml > /var/log/deploy.log 2>&1
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "成功" true 1 "准备部署环境"
@@ -59,7 +61,7 @@ function deploy() {
     #发送webhook
     webhook_all_process_retry
     #清除虚拟化系统
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/99-reset.yaml > /var/log/deploy.log 2>&1
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/99-destroy.yaml > /var/log/deploy.log 2>&1
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "clear_trochilus" "成功" true 1 "清除虚拟化系统"
     else

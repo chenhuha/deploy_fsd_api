@@ -12,12 +12,14 @@ from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConf
 from deploy.status import Status
 from upgrade.upload import Upload
 from flask import Flask
+from flask_cors import CORS
 from flask_restful import Api, Resource
 from flask_cors import CORS
 
 app = Flask(__name__)
 api = Api(app)
 app.config.from_object('config')
+CORS(app, supports_credentials=True)
 
 # Configuration logger
 logfile_dir = app.config['LOG_PATH']
@@ -54,4 +56,4 @@ api.add_resource(Upload, '/api/upgrade/upload')
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2236)
+    app.run(host='0.0.0.0', port=1236)

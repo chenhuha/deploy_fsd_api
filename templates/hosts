@@ -8,7 +8,7 @@
 [allnodes]
 # 172.18.30.244 hostname=control1 api_interface=enp125s0f0 ceph_public_interface=enp125s0f0 ceph_cluster_interface=enp125s0f0 flat_network_interface="['enp125s0f1']" vlan_network_interface="{'enp125s0f1': '1:100'}" ceph_volume_data="['/dev/vdb','/dev/vdc']" nic_info="['enp125s0f0:172.18.30.244:1100', 'enp125s0f1::0100']"
 # 172.18.30.244 hostname=control2 api_interface=enp125s0f0 ceph_public_interface=enp125s0f0 ceph_cluster_interface=enp125s0f0 flat_network_interface="['enp125s0f1']" vlan_network_interface="{'enp125s0f1': '1:100'}" ceph_volume_data="['/dev/vdb','/dev/vdc']" nic_info="['enp125s0f0:172.18.30.244:1100', 'enp125s0f1::0100']"
-172.18.30.244  hostname=controller  api_interface=ens3  ceph_public_interface=ens3  ceph_cluster_interface=ens3  nic_info="['ens3:172.18.30.244:1011','ens4:null:0100']" flat_network_interface="['ens4']"   ceph_volume_data="['/dev/vdb']"  vlan_network_interface="{'ens3':['1:4094']}"
+172.18.30.244 ansible_ssh_extra_args='-o StrictHostKeyChecking=no' hostname=controller  api_interface=ens3  ceph_public_interface=ens3  ceph_cluster_interface=ens3  nic_info="['ens3:172.18.30.244:1011','ens4:null:0100']" flat_network_interface="['ens4']"   ceph_volume_data="['/dev/vdb']"  vlan_network_interface="{'ens3':['1:4094']}"
 
 [control]
 172.18.30.244
