@@ -9,9 +9,10 @@ from flask import current_app
 from uuid import uuid1
 from threading import Thread
 from deploy.status import Status
+from deploy.node_base import Node
 
 
-class DeployScript(Preview):
+class DeployScript(Preview, Node):
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
@@ -39,8 +40,9 @@ class DeployScript(Preview):
             startTime= int(time.time() * 1000)
             )
         self._write_history_file(results)
-        cmd = ['sh', current_app.config['DEPLOY_HOME'] + '/setup.sh',
+        cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/setup.sh',
             deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
+        self._logger.info('deploy command: %s', cmd)
         results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         thread = Thread(target=self._shell_return_listen, args=(current_app._get_current_object(),results,previews,deploy_uuid,int(time.time() * 1000)))
         thread.start()

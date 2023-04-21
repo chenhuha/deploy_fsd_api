@@ -197,5 +197,5 @@ class Preview(Resource, DeployPreview):
                 storage_data['ceph_volume_data'].append(storage['name'])
             elif storage['purpose'] == 'CACHE':
                 storage_data['ceph_volume_ceph_data'].append(
-                    {'cache': storage['name'], 'date': storage['cache2data']})
+                    {'cache': storage['name'], 'data': storage['cache2data']})
         return storage_data
