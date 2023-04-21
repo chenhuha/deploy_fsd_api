@@ -19,8 +19,7 @@ class NetCheck(Resource, Node):
         else:
             data = self.multiple_nodes_data(nodes)
 
-        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx")
-        
+        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx") 
         if not os.path.isfile(node_info_file):
             source_file = os.path.join(self.template_path, "deployExcel.xlsx")
             shutil.copyfile(source_file, node_info_file)
