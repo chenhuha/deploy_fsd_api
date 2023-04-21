@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 import paramiko
 import openpyxl
 
@@ -17,8 +19,11 @@ class NetCheck(Resource, Node):
         else:
             data = self.multiple_nodes_data(nodes)
 
-        file_path = f"{self.deploy_home}/deploy_node_info.xlsx" 
-        self.write_data_to_excel(file_path, data)
+        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx") 
+        if not os.path.isfile(node_info_file):
+            source_file = os.path.join(self.template_path, "deployExcel.xlsx")
+            shutil.copyfile(source_file, node_info_file)
+        self.write_data_to_excel(node_info_file, data)
 
         return types.DataModel().model(code=0, data=data)
     
@@ -315,6 +320,14 @@ class NetCheckCommon(NetCheck):
             data = self.single_node_data(nodes)
         else:
             data = self.multiple_nodes_data(nodes)
+
+        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx")
+        
+        if not os.path.isfile(node_info_file):
+            source_file = os.path.join(self.template_path, "deployExcel.xlsx")
+            shutil.copyfile(source_file, node_info_file)
+        self.write_data_to_excel(node_info_file, data)
+        
         return types.DataModel().model(code=0, data=data)
 
     def get_cards_from_request(self):
