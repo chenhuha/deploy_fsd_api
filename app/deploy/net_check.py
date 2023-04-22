@@ -25,11 +25,16 @@ class NetCheck(Resource, Node):
 
         node_info_file = os.path.join(
             self.deploy_home, "deploy_node_info.xlsx")
+
         if os.path.isfile(node_info_file):
             os.remove(node_info_file)
-        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx") 
+        node_info_file = os.path.join(
+            self.deploy_home, "deploy_node_info.xlsx")
         source_file = os.path.join(self.template_path, "deployExcel.xlsx")
-        shutil.copyfile(source_file, node_info_file)
+        try:
+            shutil.copyfile(source_file, node_info_file)
+        except OSError as e:
+            self._logger.error('no such file deployExcel.xlsx, %s', e)
         self.write_data_to_excel(node_info_file, data)
 
         return types.DataModel().model(code=0, data=data)
@@ -322,26 +327,8 @@ class NetCheckCommon(NetCheck):
         nodes = self.get_nodes_from_request()
         cards = self.get_cards_from_request()
         self.nodes = self.uniform_format_with_nodes(nodes, cards)
-        self.node_list = self.get_info_with_from(self.nodes)
+        # self.node_list = self.get_info_with_from(self.nodes)
         super().__init__()
-
-    def post(self):
-        data = {}
-
-        if len(self.nodes) == 1:
-            data = self.single_node_data()
-        else:
-            data = self.multiple_nodes_data()
-
-        node_info_file = os.path.join(
-            self.deploy_home, "deploy_node_info.xlsx")
-        if os.path.isfile(node_info_file):
-            os.remove(node_info_file)
-        source_file = os.path.join(self.template_path, "deployExcel.xlsx")
-        shutil.copyfile(source_file, node_info_file)
-        self.write_data_to_excel(node_info_file, data)
-
-        return types.DataModel().model(code=0, data=data)
 
     def get_cards_from_request(self):
         parser = reqparse.RequestParser()
