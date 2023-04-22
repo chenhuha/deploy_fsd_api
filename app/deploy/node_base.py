@@ -12,6 +12,7 @@ class Node(object):
         self.deploy_home = current_app.config['DEPLOY_HOME']
         self.template_path = current_app.config['TEMPLATE_PATH']
 
+
     def get_nodes_from_request(self):
         parser = reqparse.RequestParser()
         parser.add_argument('nodes', required=True, location='json',

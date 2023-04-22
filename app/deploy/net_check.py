@@ -27,8 +27,9 @@ class NetCheck(Resource, Node):
             self.deploy_home, "deploy_node_info.xlsx")
         if os.path.isfile(node_info_file):
             os.remove(node_info_file)
-            source_file = os.path.join(self.template_path, "deployExcel.xlsx")
-            shutil.copyfile(source_file, node_info_file)
+        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx") 
+        source_file = os.path.join(self.template_path, "deployExcel.xlsx")
+        shutil.copyfile(source_file, node_info_file)
         self.write_data_to_excel(node_info_file, data)
 
         return types.DataModel().model(code=0, data=data)
@@ -336,8 +337,8 @@ class NetCheckCommon(NetCheck):
             self.deploy_home, "deploy_node_info.xlsx")
         if os.path.isfile(node_info_file):
             os.remove(node_info_file)
-            source_file = os.path.join(self.template_path, "deployExcel.xlsx")
-            shutil.copyfile(source_file, node_info_file)
+        source_file = os.path.join(self.template_path, "deployExcel.xlsx")
+        shutil.copyfile(source_file, node_info_file)
         self.write_data_to_excel(node_info_file, data)
 
         return types.DataModel().model(code=0, data=data)
