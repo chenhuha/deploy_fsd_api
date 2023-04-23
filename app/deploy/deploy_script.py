@@ -67,7 +67,7 @@ class DeployScript(Preview, Node):
             f.write(results_yaml)
 
     def _write_node_info_csv(self, nodes):
-        book = load_workbook( current_app.config['DEPLOY_HOME'] + '/deployExcel.xlsx')
+        book = load_workbook( current_app.config['DEPLOY_HOME'] + '/deploy_node_info.xlsx')
         template_sheet = book['mould']
         for node in nodes:
             target_sheet = book.copy_worksheet(template_sheet)
@@ -83,7 +83,7 @@ class DeployScript(Preview, Node):
             self._write_info_csv(hdd_info, target_sheet, 3, 16)
             self._write_info_csv(ssd_info, target_sheet, 3, 22)
 
-        book.save(current_app.config['DEPLOY_HOME'] + '/deployExcel.xlsx')
+        book.save(current_app.config['DEPLOY_HOME'] + '/deploy_node_info.xlsx')
         book.close()
 
     def _write_info_csv(self, infos, sheet, start_row, start_col):
@@ -113,8 +113,12 @@ class DeployScript(Preview, Node):
         ssd_storages_info = []
         storage_load_dict = self._load_storage()
         for storage in storages:
-            _bool, storgae_info = self._ssd_bool(
-                storage['name'], storage_load_dict)
+            if storage_load_dict:
+                _bool, storgae_info = self._ssd_bool(
+                    storage['name'], storage_load_dict)
+            else:
+                _bool = False
+                storgae_info = {}
             if _bool:
                 ssd_storages_info.append([
                     storage['name'],
@@ -162,4 +166,4 @@ class DeployScript(Preview, Node):
         except Exception as e:
             self._logger.error(
                 f"Faild open {current_app.config['DEPLOY_HOME'] + '/load.json'} and to json ,Because: {e}")
-            return {}
+            return []
