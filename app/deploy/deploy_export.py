@@ -9,10 +9,9 @@ class DeployExport(Resource):
     def __init__(self):
         super().__init__()
         self.deploy_home = current_app.config['DEPLOY_HOME']
-    
 
     def post(self):
-        file_path = f"{self.deploy_home}/deploy_node_info.csv" 
+        file_path = f"{self.deploy_home}/deploy_node_info.xlsx" 
 
         if not os.path.isfile(file_path):
             return {'message': 'The file does not exist'}, 404
@@ -27,7 +26,7 @@ class DeployExport(Resource):
                     yield data
 
         response = Response(generate(), mimetype='application/octet-stream')
-        response.headers.set('Content-Disposition', 'attachment', filename='deploy_node_info.csv')
+        response.headers.set('Content-Disposition', 'attachment', filename='deploy_node_info.xlsx')
         response.headers.set('Content-Type', 'application/octet-stream')
         response.headers.set('Content-Length', os.path.getsize(file_path))
         response.headers.set('Cache-Control', 'no-cache')
