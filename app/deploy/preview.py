@@ -40,7 +40,6 @@ class Preview(Resource, DeployPreview):
         return types.DataModel().model(code=0, data=global_vars_data)
 
     def file_conversion(self, previews):
-        #fsd_voi_version,deploy_edu,deploy_comm,voi_data_device 未加
         # global_var.yml文件预览
         commonFixed = previews['common']['commonFixed']
         commonCustom = previews['common']['commonCustom']
@@ -200,9 +199,9 @@ class Preview(Resource, DeployPreview):
         }
         for storage in storages:
             if storage['purpose'] == 'DATA':
-                storage_data['ceph_volume_data'].append(storage['name'])
+                storage_data['ceph_volume_data'].append('/dev/' + storage['name'])
             elif storage['purpose'] == 'CACHE':
+                storage['cache2data'] = ['/dev/' + item for item in storage['cache2data']]
                 storage_data['ceph_volume_ceph_data'].append(
-                    {'cache': storage['name'], 'data': storage['cache2data'].join(' ')})
-                    
+                    {'cache': '/dev/' + storage['name'], 'data': ' '.join(storage['cache2data'])})
         return storage_data

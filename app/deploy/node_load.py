@@ -15,7 +15,7 @@ class NodeLoad(Resource, Node):
 
     def post(self):
         data = self.get_device_info()
-
+        self._write_load_info(data)
         return types.DataModel().model(code=0, data=data)
     
     def get_device_info(self):
@@ -80,3 +80,10 @@ class NodeLoad(Resource, Node):
         result_dict.pop('storages')
 
         return result_dict
+
+    def _write_load_info(self, data):
+        try:
+            with(open(current_app.config['DEPLOY_HOME'] + '/load.json', 'w')) as f:
+                f.write(json.dumps(data))
+        except Exception as e:
+            self._logger.error(f"Failed to write load json file: {e}")
