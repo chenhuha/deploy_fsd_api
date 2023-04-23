@@ -13,6 +13,8 @@ from deploy.preview import Preview
 from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConfig
 from deploy.status import Status
 from upgrade.upload import Upload
+from upgrade.upgrade_history import UpgradeHistory
+from upgrade.status import UpgradeStatus
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource
@@ -30,7 +32,7 @@ if not os.path.isdir(logfile_dir):
     os.mkdir(logfile_dir)
 
 log_format = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-logging.basicConfig(filename='/var/log/deploy/deploy_fsd.log',
+logging.basicConfig(filename='/var/log/deploy/klc-deploy-api.log',
                     level=logging.DEBUG, format=log_format)
 
 # get version
@@ -41,6 +43,8 @@ class Version(Resource):
 
 # Actually setup the Api resource routing here
 api.add_resource(Version, '/')
+
+# Deploy api register
 api.add_resource(NodeCheck, '/api/deploy/node/check')
 api.add_resource(NodeSecret, '/api/deploy/node/secret')
 api.add_resource(NodeLoad, '/api/deploy/node/load')
@@ -56,8 +60,14 @@ api.add_resource(Status, '/api/deploy/status')
 api.add_resource(DeployHistory, '/api/deploy/history')
 api.add_resource(DeployExport, '/api/deploy/export')
 api.add_resource(DeployLog, '/api/deploy/download')
+
+# Upload api register
 api.add_resource(Upload, '/api/upgrade/upload')
+api.add_resource(UpgradeHistory, '/api/upgrade/history')
+api.add_resource(UpgradeStatus, '/api/upgrade/status')
+
+# Extension api register
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2236)
+    app.run(host='0.0.0.0', port=1236)
