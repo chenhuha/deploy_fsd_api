@@ -17,15 +17,13 @@ class NetCheck(Resource, Node):
 
     def post(self):
         data = {}
-
         if len(self.nodes) == 1:
             data = self.single_node_data()
         else:
             data = self.multiple_nodes_data()
 
-        node_info_file = os.path.join(
-            self.deploy_home, "deploy_node_info.xlsx")
-
+        # 保存数据到本地
+        node_info_file = os.path.join(self.deploy_home, "deploy_node_info.xlsx")
         if os.path.isfile(node_info_file):
             os.remove(node_info_file)
         node_info_file = os.path.join(
@@ -41,23 +39,57 @@ class NetCheck(Resource, Node):
 
     # 单节点
     def single_node_data(self):
-        result = {}
-        for node in self.node_list:
+        node = self.node_list[0]
+        api_result = []
+        storage_cluster_result = []
+        storage_public_result = []
+
+        if 'management' in node:
+            status = 2 if int(node['management']['speed']) < 1000 else 0
             result = {
-                'sourceIp': node['management_ip'],
+                'sourceIp': node['management']['ip'],
                 'sourceHostname': node['hostname'],
-                'destIp': node['management_ip'],
+                'destIp': node['management']['ip'],
                 'destHostname': node['hostname'],
-                'speed': node['management_speed'],
+                'speed': node['management']['speed'],
                 'realSpeed': '-',
-                'mtu': node['management_mtu'],
+                'mtu': node['management']['mtu'],
                 'plr': '-',
-                'status': 0
+                'status': status
             }
+            api_result.append(result)
 
-        api_result = [result]
+        if 'storage_cluster' in node:
+            status = 2 if int(node['storage_cluster']['speed']) < 10000 else 0
+            result = {
+                'sourceIp': node['storage_cluster']['ip'],
+                'sourceHostname': node['hostname'],
+                'destIp': node['storage_cluster']['ip'],
+                'destHostname': node['hostname'],
+                'speed': node['storage_cluster']['speed'],
+                'realSpeed': '-',
+                'mtu': node['storage_cluster']['mtu'],
+                'plr': '-',
+                'status': status
+            }
+            storage_cluster_result.append(result)
 
-        return self.combine_results(api_result, [], [])
+        if 'storage_public' in node:
+            status = 2 if int(node['storage_public']['speed']) < 10000 else 0
+            result = {
+                'sourceIp': node['storage_public']['ip'],
+                'sourceHostname': node['hostname'],
+                'destIp': node['storage_public']['ip'],
+                'destHostname': node['hostname'],
+                'speed': node['storage_public']['speed'],
+                'realSpeed': '-',
+                'mtu': node['storage_public']['mtu'],
+                'plr': '-',
+                'status': status
+            }
+            storage_public_result.append(result)
+
+        return self.combine_results(api_result, storage_cluster_result, storage_public_result)
 
     # 多节点
     def multiple_nodes_data(self):
@@ -65,18 +97,19 @@ class NetCheck(Resource, Node):
         ceph_cluster_result = []
         ceph_public_result = []
 
-        def output_format(current_node, node, node_ip, port, type):
+        def output_format(current_node, node, node_ip, port, purpose):
             try:
                 output = self.iperf3_client(
-                    current_node['management_ip'], node_ip, port)
-                return self.output_format_different_node(output)
+                    current_node['management']['ip'], node_ip, port)
+                client_result, server_result = self.output_format_different_node(output, purpose)
+                return client_result, server_result
             except Exception as e:
                 self._logger.error('get iperf3_client output failed, %s', e)
-                return self.output_format_null_node(current_node, node, type)
+                return self.output_format_null_node(current_node, node, purpose)
 
         # execute iperf3 client and collect results
         for i, current_node in enumerate(self.node_list):
-            for j, node in enumerate(self.node_list):
+            for j, node in enumerate(self.node_list[i:], i):
                 if i == j:
                     api_result.append(
                         self.output_format_same_node(node, 'management'))
@@ -87,40 +120,32 @@ class NetCheck(Resource, Node):
                 else:
                     # prepare iperf3 server
                     for port in [5201, 5202, 5203]:
-                        self.iperf3_server(node['management_ip'], port)
+                        self.iperf3_server(node['management']['ip'], port)
 
-                    api_result.append(output_format(
-                        current_node, node, node['management_ip'], 5201, 'management'))
-                    ceph_cluster_result.append(output_format(
-                        current_node, node, node['storage_cluster_ip'], 5202, 'storage_cluster'))
-                    ceph_public_result.append(output_format(
-                        current_node, node, node['storage_public_ip'], 5203, 'storage_public'))
+                    api_result.extend(output_format(current_node, node, node['management']['ip'], 5201, 'management'))
+                    ceph_cluster_result.extend(output_format(current_node, node, node['storage_cluster']['ip'], 5202, 'storage_cluster'))
+                    ceph_public_result.extend(output_format(current_node, node, node['storage_public']['ip'], 5203, 'storage_public'))
+
 
         return self.combine_results(api_result, ceph_cluster_result, ceph_public_result)
 
     # 处理前端传来的数据
     def get_info_with_from(self, nodes):
         node_list = []
-
         for node in nodes:
-            node_info = {}
+            node_info = {
+                'hostname': node['nodeName'], 'nodeIP': node['nodeIP']}
             for card in node['cards']:
-                if 'MANAGEMENT' in card['purpose']:
-                    node_info['management_ip'] = card['ip']
-                    node_info['management_speed'] = card['speed']
-                    node_info['management_mtu'] = card['mtu']
-
-                if 'STORAGECLUSTER' in card['purpose']:
-                    node_info['storage_cluster_ip'] = card['ip']
-                    node_info['storage_cluster_speed'] = card['speed']
-                    node_info['storage_cluster_mtu'] = card['mtu']
-
-                if 'STORAGEPUBLIC' in card['purpose']:
-                    node_info['storage_public_ip'] = card['ip']
-                    node_info['storage_public_speed'] = card['speed']
-                    node_info['storage_public_mtu'] = card['mtu']
-
-                node_info['hostname'] = node['nodeName']
+                purpose = card.get('purpose')
+                if 'MANAGEMENT' in purpose:
+                    node_info['management'] = {
+                        'ip': card['ip'], 'speed': card['speed'], 'mtu': card['mtu']}
+                if 'STORAGECLUSTER' in purpose:
+                    node_info['storage_cluster'] = {
+                        'ip': card['ip'], 'speed': card['speed'], 'mtu': card['mtu']}
+                if 'STORAGEPUBLIC' in purpose:
+                    node_info['storage_public'] = {
+                        'ip': card['ip'], 'speed': card['speed'], 'mtu': card['mtu']}
             node_list.append(node_info)
 
         return node_list
@@ -144,17 +169,16 @@ class NetCheck(Resource, Node):
         return data
 
     # 处理相同节点的数据
-    def output_format_same_node(self, node, card_purpose):
-        source_ip = node[f"{card_purpose}_ip"]
+    def output_format_same_node(self, node, purpose):
+        source_ip = node[purpose]['ip']
         source_hostname = node["hostname"]
         dest_ip = source_ip
         dest_hostname = source_hostname
-        speed = node[f"{card_purpose}_speed"]
+        speed = node[purpose]['speed']
         real_speed = int(speed) / 8
-        mtu = node[f"{card_purpose}_mtu"]
-        packet_loss_rate = '0%'
-        status = self._get_status(
-            speed, real_speed, packet_loss_rate, source_ip)
+        mtu = node[purpose]['mtu']
+        plr = '0%'
+        status = self._get_status(speed, real_speed, plr, source_ip, purpose)
 
         result = {
             'sourceIp': source_ip,
@@ -164,51 +188,63 @@ class NetCheck(Resource, Node):
             'speed': speed,
             'realSpeed': real_speed,
             'mtu': mtu,
-            'packetLossRate': packet_loss_rate,
+            'packetLossRate': plr,
             'status': status
         }
 
         return result
 
     # 处理 iperf 返回的数据
-    def output_format_different_node(self, result):
+    def output_format_different_node(self, result, purpose):
         json_data = json.loads(result)
-
+ 
         local_host = json_data['start']['connected'][0]['local_host']
         remote_host = json_data['start']['connected'][0]['remote_host']
-        bits_per_second = json_data['end']['sum_received']['bits_per_second']
-
-        source_hostname = self._get_hostname(local_host)
-        dest_hostname = self._get_hostname(remote_host)
-        speed = self._get_speed(local_host)
-        real_speed = self._get_realSpeed(bits_per_second)
-        mtu = self._get_mtu(local_host)
+        client_bits_per_second = json_data['end']['sum_received']['bits_per_second']
+        server_bits_per_second = json_data['server_output_json']['end']['sum_received']['bits_per_second']
+        client_hostname, client_speed, client_mtu = self._get_node_property(local_host)
+        server_hostname, server_speed, server_mtu = self._get_node_property(remote_host)
+        client_real_speed = self._get_realSpeed(client_bits_per_second)
+        server_real_speed = self._get_realSpeed(server_bits_per_second)
         plr = self._get_packet_loss_rate(local_host, remote_host)
-        status = self._get_status(speed, real_speed, plr, local_host)
+        client_status = self._get_status(client_speed, client_real_speed, plr, local_host, purpose)
+        server_status = self._get_status(server_speed, server_real_speed, plr, remote_host, purpose)
 
-        result = {
+        client_result = {
             'sourceIp': local_host,
-            'sourceHostname': source_hostname,
+            'sourceHostname': client_hostname,
             'destIp': remote_host,
-            'destHostname': dest_hostname,
-            'speed': speed,
-            'realSpeed': real_speed,
-            'mtu': mtu,
+            'destHostname': server_hostname,
+            'speed': client_speed,
+            'realSpeed': client_real_speed,
+            'mtu': client_mtu,
             'plr': plr,
-            'status': status
+            'status': client_status
         }
+        server_result ={
+            'sourceIp': remote_host,
+            'sourceHostname': server_hostname,
+            'destIp': local_host,
+            'destHostname': client_hostname,
+            'speed': server_speed,
+            'realSpeed': server_real_speed,
+            'mtu': server_mtu,
+            'plr': plr,
+            'status': server_status
+        }
+        
+        
+        return client_result, server_result
 
-        return result
-
-    def output_format_null_node(self, current_node, node, card_purpose):
-        source_ip = current_node[f"{card_purpose}_ip"]
+    def output_format_null_node(self, current_node, node, purpose):
+        source_ip = current_node[purpose]['ip']
         source_hostname = current_node["hostname"]
-        dest_ip = node[f"{card_purpose}_ip"]
+        dest_ip = node[purpose]['ip']
         dest_hostname = node["hostname"]
-        speed = node[f"{card_purpose}_speed"]
+        speed = node[purpose]['speed']
         real_speed = 0
-        mtu = node[f"{card_purpose}_mtu"]
-        packet_loss_rate = '100%'
+        mtu = node[purpose]['mtu']
+        packet_loss_rate = '-'
         status = 1
 
         result = {
@@ -244,57 +280,36 @@ class NetCheck(Resource, Node):
 
         return packet_loss
 
-    def _get_hostname(self, node_ip):
+    def _get_node_property(self, node_ip):
         for node in self.node_list:
-            for key in ['management_ip', 'storage_cluster_ip', 'storage_public_ip']:
-                if node[key] == node_ip:
-                    return node['hostname']
-        return None
+            for key in ['management', 'storage_cluster', 'storage_public']:
+                if node[key]['ip'] == node_ip:    
+                    return node['hostname'], node[key]['speed'], node[key]['mtu']
+        
+        return None, 0, 0
 
     def _get_realSpeed(self, bits_per_second):
         return round(bits_per_second / 1000000 / 8, 2)
 
-    def _get_speed(self, node_ip):
-        for node in self.node_list:
-            for key in ['management_ip', 'storage_cluster_ip', 'storage_public_ip']:
-                if node[key] == node_ip:
-                    return node[key.replace('ip', 'speed')]
-        return None
-
-    def _get_mtu(self, node_ip):
-        for node in self.node_list:
-            for key in ['management_ip', 'storage_cluster_ip', 'storage_public_ip']:
-                if node[key] == node_ip:
-                    return node[key.replace('ip', 'mtu')]
-        return None
-
-    def _get_status(self, speed, real_speed, plr, node_ip=''):
+    def _get_status(self, speed, real_speed, plr, node_ip, purpose):
         if plr != '0%':
             self._logger.info('plr not is 0%')
             return 1
 
-        for node in self.node_list:
-            if node['management_ip'] == node_ip:
-                if int(node['management_speed']) < 1000:
-                    self._logger.info(
-                        'The speed of the management network card is less than 1000')
-                    return 2
+        if purpose == 'management' and int(speed) < 1000:
+                self._logger.warn(f'The speed of the management card < 1000, {node_ip}')
+                return 2
 
-            if node['storage_cluster_ip'] == node_ip:
-                if int(node['storage_cluster_speed']) < 10000:
-                    self._logger.info(
-                        'The speed of the storage cluster network card is less than 10000')
-                    return 2
+        if purpose == 'storage_cluster' and int(speed) < 10000:
+                self._logger.warn(f'The speed of the storage_cluster card < 10000, {node_ip}')
+                return 2
 
-            if node['storage_public_ip'] == node_ip:
-                if int(node['storage_public_speed']) < 10000:
-                    self._logger.info(
-                        'The speed of the storage public network card is less than 10000')
-                    return 2
+        if purpose == 'storage_public' and int(speed) < 10000:
+                self._logger.warn(f'The speed of the storage_cluster card < 10000, {node_ip}')
+                return 2
 
         if int(real_speed) < int(speed) / 8 * 0.5:
-            self._logger.info(
-                'The real-time bandwidth is less than 50% of the standard')
+            self._logger.warn(f'The real-time bandwidth is less than 50% of the standard, {node_ip}')
             return 2
 
         return 0
