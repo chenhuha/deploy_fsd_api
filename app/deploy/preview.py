@@ -54,7 +54,7 @@ class Preview(Resource, DeployPreview):
         if previews['deployType'] == "COMM":
             global_var_data['deploy_comm'] = True
             global_var_data['deploy_edu'] = False
-        elif previews['deployType'] == "EDU":
+        elif previews['deployType'] == "EASYEDU":
             global_var_data['deploy_comm'] = False
             global_var_data['deploy_edu'] = True
         if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":

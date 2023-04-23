@@ -21,17 +21,19 @@ class Upgrade(Resource):
 
     def decompression(self,file_path):
         try:
-            with open(current_app.config['DEPLOY_HOME'] + '/tmp/upgrade_now_status' , 'w') as f:
-                try:
-                    with tarfile.open(file_path) as tar:
-                        tar.extractall(current_app.config['UPGRADE_SAVE_PATH'])
-                        tar.close()
-                    data = self._data_build(True)
-                except:
-                    data = self._data_build(False)
-        except:
+            with tarfile.open(file_path) as tar:
+                tar.extractall(current_app.config['UPGRADE_SAVE_PATH'])
+                tar.close()
+            data = self._data_build(True)
+        except Exception as e:
+            self._logger.error(f'Decompression file {file_path} Field, Because: {e}')
             data = self._data_build(False)
-            f.write(jsonify([data]))
+        
+        try:
+            with open('/tmp/upgrade_now_status' , 'w') as f:
+                f.write(jsonify([data]))
+        except Exception as e:
+            self._logger.error(f'Open file /tmp/upgrade_now_status is Feild, because: {e}')
     
     def _data_build(self,ok):
         return {

@@ -22,7 +22,8 @@ class Upload(Resource):
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(current_app.config['UPGRADE_SAVE_PATH'], filename))
                 return types.DataModel().model(code=0,data="",message="上传成功")
-            except:
+            except Exception as e:
+                self._logger.error(f'Failed to upload file {secure_filename(file.filename)}, Because: {e}')
                 return types.DataModel().model(code=10304,data="",message="上传失败")
         else:
             return types.DataModel().model(code=10704,data="",message="文件名错误")
