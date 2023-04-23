@@ -190,8 +190,7 @@ class Preview(Resource, DeployPreview):
                 else:
                     card_info['nic'].append("{}:null:{}:{}".format(
                         cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4)),cards_nic['salve']))
-
-        return card_info
+        return card_info   
 
     def _storage_classify_build(self, storages):
         storage_data = {
@@ -203,6 +202,6 @@ class Preview(Resource, DeployPreview):
                 storage_data['ceph_volume_data'].append(storage['name'])
             elif storage['purpose'] == 'CACHE':
                 storage_data['ceph_volume_ceph_data'].append(
-                    {'cache': storage['name'], 'data': storage['cache2data'].join(' ')})
+                    {'cache': storage['name'], 'data': ' '.join(storage['cache2data'])})
                     
         return storage_data
