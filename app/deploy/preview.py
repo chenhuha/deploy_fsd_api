@@ -34,7 +34,7 @@ class Preview(Resource, DeployPreview):
         file_list = ["ceph-globals.yaml", "global_vars.yaml", "hosts"]
         global_vars_data = []
         for file in file_list:
-            with open(current_app.config['ETC_EXAMPLE_PATH'] + file, 'r') as f:
+            with open(current_app.config['TEMPLATE_PATH'] + file, 'r') as f:
                 global_vars_data.append({'shellName': file,
                            'shellContent': f.read()})
         return types.DataModel().model(code=0, data=global_vars_data)
@@ -46,7 +46,7 @@ class Preview(Resource, DeployPreview):
         commonCustom = previews['common']['commonCustom']
         commonCustomPool = commonCustom['commonCustomPool']
         global_var_data = utils.yaml_to_dict(
-            current_app.config['ETC_EXAMPLE_PATH'] + '/global_vars.yaml')
+            current_app.config['TEMPLATE_PATH'] + '/global_vars.yaml')
         global_var_data['external_vip_address'] = commonFixed['apiVip']
         global_var_data['voi_storage_num'] = commonFixed['voiResourceSize']
         global_var_data['vdi_storage_num'] = commonFixed['blockStorageSize']
@@ -69,7 +69,7 @@ class Preview(Resource, DeployPreview):
 
         # ceph_global_var.yml文件预览
         ceph_global_var_data = utils.yaml_to_dict(
-            current_app.config['ETC_EXAMPLE_PATH'] + '/ceph-globals.yaml')
+            current_app.config['TEMPLATE_PATH'] + '/ceph-globals.yaml')
         ceph_global_var_data['ceph_public_network'] = commonFixed['cephPublic']
         ceph_global_var_data['ceph_cluster_network'] = commonFixed['cephCluster']
         ceph_global_var_data['osd_pool_default_size'] = commonCustom['commonCustomCeph']['cephCopyNumDefault']
