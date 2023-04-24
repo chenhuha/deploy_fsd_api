@@ -105,7 +105,7 @@ function get_network_info() {
 function get_storage_info() {
   temp_json='{"name":"","size":"","model":"","partition":"","ishdd":"","issystem":""}'
   storages=`ssh "$host_ip" "lsblk -d" | grep "disk" | grep -v "rbd" | awk '{print $1}'`
-  system_disk=`bash /root/deploy/system_disk.sh $host_ip`
+  system_disk=`bash /root/deploy/kly-deploy-api/scripts/system_disk.sh $host_ip`
   #echo $storages
   storages_array=(${storages})
   for i in ${!storages_array[@]}; do
