@@ -1,3 +1,4 @@
+PORT = 1236
 DEBUG = True
 LOG_PATH = '/var/log/deploy/'
 DEPLOY_HOME = '/root/deploy/'

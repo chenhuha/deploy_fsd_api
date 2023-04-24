@@ -1,3 +1,4 @@
+import config
 import logging
 import os
 
@@ -13,6 +14,7 @@ from deploy.preview import Preview
 from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConfig
 from deploy.status import Status
 from upgrade.upload import Upload
+from upgrade.upgrade import Upgrade
 from upgrade.upgrade_history import UpgradeHistory
 from upgrade.status import UpgradeStatus
 from flask import Flask
@@ -63,6 +65,7 @@ api.add_resource(DeployLog, '/api/deploy/download')
 
 # Upload api register
 api.add_resource(Upload, '/api/upgrade/upload')
+api.add_resource(Upgrade, '/api/upgrade')
 api.add_resource(UpgradeHistory, '/api/upgrade/history')
 api.add_resource(UpgradeStatus, '/api/upgrade/status')
 
@@ -70,4 +73,5 @@ api.add_resource(UpgradeStatus, '/api/upgrade/status')
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1236)
+    port = config.PORT
+    app.run(host='0.0.0.0', port=port)
