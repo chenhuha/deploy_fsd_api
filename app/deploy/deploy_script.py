@@ -4,7 +4,7 @@ import yaml
 import subprocess
 import time
 from openpyxl import load_workbook
-from common import types
+from common import types, utils, constants
 from deploy.preview import Preview
 from flask import current_app
 from uuid import uuid1
@@ -14,6 +14,10 @@ from deploy.node_base import Node
 
 
 class DeployScript(Preview, Node):
+    def __init__(self):
+        self.history_path = current_app.config['DEPLOY_HOME'] + \
+            '/historyDeploy.yml'
+
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
@@ -24,7 +28,7 @@ class DeployScript(Preview, Node):
         return types.DataModel().model(code=0, data="")
 
     def control_deploy(self, previews):
-        if not os.path.exists(current_app.config['DEPLOY_HOME'] + '/historyDeploy.yml'):
+        if not os.path.exists(self.history_path):
             deploy_type = "first"
         else:
             deploy_type = "retry"
@@ -38,7 +42,7 @@ class DeployScript(Preview, Node):
         )
         self._write_history_file(results)
         cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/setup.sh',
-            deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
+               deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
         self._logger.info('deploy command: %s', cmd)
         results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         thread = Thread(target=self._shell_return_listen, args=(
@@ -60,14 +64,22 @@ class DeployScript(Preview, Node):
             )
             self._write_history_file(results)
             self._write_node_info_csv(previews['nodes'])
+            self.scp_deploy(previews['nodes'])
+            version = self.version(previews)
+            self._write_upgrade_file(version)
 
     def _write_history_file(self, result):
         results_yaml = yaml.dump(result, sort_keys=False, allow_unicode=True)
-        with open(current_app.config['DEPLOY_HOME'] + '/historyDeploy.yml', 'w', encoding='UTF-8') as f:
-            f.write(results_yaml)
+        try:
+            with open(self.history_path, 'w', encoding='UTF-8') as f:
+                f.write(results_yaml)
+        except Exception as e:
+            self._logger.error(
+                f"Faild write {self.history_path} ,Because: {e}")
 
     def _write_node_info_csv(self, nodes):
-        book = load_workbook( current_app.config['DEPLOY_HOME'] + '/deploy_node_info.xlsx')
+        book = load_workbook(
+            current_app.config['DEPLOY_HOME'] + '/deploy_node_info.xlsx')
         template_sheet = book['mould']
         for node in nodes:
             target_sheet = book.copy_worksheet(template_sheet)
@@ -167,3 +179,46 @@ class DeployScript(Preview, Node):
             self._logger.error(
                 f"Faild open {current_app.config['DEPLOY_HOME'] + '/load.json'} and to json ,Because: {e}")
             return []
+
+    def scp_deploy(self, nodes):
+        try:
+            for node in nodes:
+                cmd = constants.COMMAND_SCP_FILE % (
+                    current_app.config['NODE_PASS'], self.history_path, current_app.config['NODE_USER'], node, self.history_path)
+                _, result, _ = utils.execute(cmd)
+                self._logger.info(f"Execute command '{cmd}', result:{result}")
+        except Exception as e:
+            self._logger.error(
+                f"Execute command to copy history is faild ,Because: {e}")
+
+    def version(self, previews):
+        if os.path.exists('/etc/klcloud-release'):
+            with open('/etc/klcloud-release', 'r') as f:
+                version = f.read()
+        else:
+            with open(os.path.join(current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml', 'r')) as f:
+                global_var = yaml.load(f.read())
+            if global_var['deploy_edu']:
+                version = f"EDU-v{global_var['fsd_default_tag']}"
+            else:
+                version = f"COMM-v{global_var['fsd_default_tag']}"
+            with open('/etc/klclould-release', 'w') as f:
+                f.write(version)
+
+    def _write_upgrade_file(self, version):
+        if os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')):
+            pass
+        else:
+            with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
+                f.write({
+                    "message": "",
+                    "startTime": int(time.time() * 1000),
+                    "endtime": int(time.time() * 1000),
+                    "history_data": [{
+                        "version": "_",
+                        "new_version": version,
+                        "result": True,
+                        "message": "_",
+                        "endtime": int(time.time() * 1000)
+                    }]
+                })

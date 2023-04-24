@@ -68,3 +68,8 @@ def yaml_to_dict(yamlPath):
     with open(yamlPath, encoding='UTF-8') as f:
         datas = yaml.load(f ,Loader=yaml.FullLoader)
     return datas
+
+def get_version():
+    with open('/etc/klcloud-release', 'r') as f:
+        version = f.read()
+    return version

@@ -20,5 +20,12 @@ COMMAND_SSH_COPY_ID_SUCCESS = 'Number of key(s) added: 1'
 # 免密 命令 结果
 COMMAND_SSH_COPY_ID_EXIST = 'All keys were skipped because they already exist on the remote system.'
 
+
 # ansible 前置环境部署
 COMMAND_ANSIBLE_PREPER_DEPLOY = 'ansible -i %s -e @%s -e @%s %s'
+
+# scp命令
+COMMAND_SCP_FILE = 'sshpass -p %s scp -o StrictHostKeyChecking=no -r %s %s@%s:%s'
+
+# 数据库备份命令
+COMMAND_MYSQL_DUMP = 'mysqldump -u%s -p%s --all-databases > %s'
