@@ -33,9 +33,9 @@ class Upgrade(Resource):
     def decompression(self, file_name):
         file_path = os.path.join(current_app.config['UPGRADE_SAVE_PATH'], file_name)
         try:
-            with tarfile.open(file_path) as tar:
-                tar.extractall(current_app.config['UPGRADE_SAVE_PATH'])
-                tar.close()
+            cmd = constants.COMMAND_TAR_UNZIP % (file_path,current_app.config['UPGRADE_SAVE_PATH'])
+            _, result, _ = utils.execute(cmd)
+            self._logger.info(f"Execute command to decompression zip package '{cmd}', result:{result}")
             data = self._data_build(True)
         except Exception as e:
             self._logger.error(
@@ -88,7 +88,7 @@ class Upgrade(Resource):
 
     def upgrade_script(self,filename):
         try:
-            cmd = f"sh {os.path.join(current_app.config['SCRIPT_PATH'], 'upgrade.sh')} {filename.split('.')[0]} {self.version}"
+            cmd = f"sh {os.path.join(current_app.config['SCRIPT_PATH'], 'upgrade.sh')} { os.path.splitext(filename)[0] } {self.version}"
             _, result, _ = utils.execute(cmd)
             self._logger.info(f"Execute command '{cmd}', result:{result}")
         except Exception as e:

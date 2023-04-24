@@ -29,3 +29,6 @@ COMMAND_SCP_FILE = 'sshpass -p %s scp -o StrictHostKeyChecking=no -r %s %s@%s:%s
 
 # 数据库备份命令
 COMMAND_MYSQL_DUMP = 'mysqldump -u%s -p%s --all-databases > %s'
+
+# tar解压命令
+COMMAND_TAR_UNZIP = 'tar zxf %s -C %s'
