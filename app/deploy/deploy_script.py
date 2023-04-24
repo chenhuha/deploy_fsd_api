@@ -15,6 +15,7 @@ from deploy.node_base import Node
 
 class DeployScript(Preview, Node):
     def __init__(self):
+        super().__init__()
         self.history_path = current_app.config['DEPLOY_HOME'] + \
             '/historyDeploy.yml'
 
@@ -210,7 +211,7 @@ class DeployScript(Preview, Node):
             pass
         else:
             with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
-                f.write({
+                f.write(json.dumps({
                     "message": "",
                     "startTime": int(time.time() * 1000),
                     "endtime": int(time.time() * 1000),
@@ -221,4 +222,4 @@ class DeployScript(Preview, Node):
                         "message": "_",
                         "endtime": int(time.time() * 1000)
                     }]
-                })
+                }))

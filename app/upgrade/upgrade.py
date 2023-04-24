@@ -41,7 +41,7 @@ class Upgrade(Resource):
             self._logger.error(
                 f'Decompression file {file_path} Field, Because: {e}')
             data = self._data_build(False)
-        self._write_upgrade_file(data)
+        self._write_upgrade_file(jsonify([data]))
 
     def _data_build(self, ok):
         return {
@@ -67,7 +67,7 @@ class Upgrade(Resource):
             data = self._dump_mysql_data_buid(False)
             self._logger.error(
                 f"Execute command to dump mysql is faild ,Because: {e}")
-        self._write_upgrade_file(data)
+        self._write_upgrade_file(jsonify([data]))
 
     def _dump_mysql_data_buid(self, ok):
         return {
