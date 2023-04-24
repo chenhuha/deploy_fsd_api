@@ -15,6 +15,7 @@ from deploy.status import Status
 from upgrade.upload import Upload
 from upgrade.upgrade_history import UpgradeHistory
 from upgrade.status import UpgradeStatus
+from upgrade.upgrade import Upgrade
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource
@@ -63,6 +64,7 @@ api.add_resource(DeployLog, '/api/deploy/download')
 
 # Upload api register
 api.add_resource(Upload, '/api/upgrade/upload')
+api.add_resource(Upgrade, '/api/upgrade')
 api.add_resource(UpgradeHistory, '/api/upgrade/history')
 api.add_resource(UpgradeStatus, '/api/upgrade/status')
 
