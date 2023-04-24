@@ -1,4 +1,3 @@
-import config
 import logging
 import os
 
@@ -34,7 +33,7 @@ if not os.path.isdir(logfile_dir):
     os.mkdir(logfile_dir)
 
 log_format = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-logging.basicConfig(filename='/var/log/deploy/klc-deploy-api.log',
+logging.basicConfig(filename= logfile_dir + '/klc-deploy-api.log',
                     level=logging.DEBUG, format=log_format)
 
 # get version
@@ -73,5 +72,5 @@ api.add_resource(UpgradeStatus, '/api/upgrade/status')
 
 
 if __name__ == '__main__':
-    port = config.PORT
+    port = app.config['PORT']
     app.run(host='0.0.0.0', port=port)

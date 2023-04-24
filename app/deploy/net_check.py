@@ -6,6 +6,7 @@ import openpyxl
 
 from common import types
 from deploy.node_base import Node
+from flask import current_app
 from flask_restful import reqparse, Resource
 
 
@@ -342,7 +343,6 @@ class NetCheckCommon(NetCheck):
         nodes = self.get_nodes_from_request()
         cards = self.get_cards_from_request()
         self.nodes = self.uniform_format_with_nodes(nodes, cards)
-        # self.node_list = self.get_info_with_from(self.nodes)
         super().__init__()
 
     def get_cards_from_request(self):
@@ -353,26 +353,34 @@ class NetCheckCommon(NetCheck):
         return parser.parse_args()['cards']
 
     def uniform_format_with_nodes(self, nodes, cards):
+        load_info = self.load_storage()
         for node in nodes:
             node_cards = []
+            node_ip = node['nodeIP']
             for card in cards:
                 if 'MANAGEMENT' in card['purpose']:
-                    card['ip'] = node['nodeIP']
+                    card['ip'] = node_ip
                 elif 'STORAGEPUBLIC' in card['purpose'] or 'STORAGECLUSTER' in card['purpose']:
-                    card['ip'] = self.get_remote_ip_address(
-                        node['nodeIP'], card['name'])
+                    card_ip = self.get_card_ip(load_info, node_ip, card['name'])
+                    card['ip'] = card_ip if card_ip else node_ip
                 node_cards.append(card.copy())
             node['cards'] = node_cards
-
         return nodes
 
-    def get_remote_ip_address(self, remote_host, interface_name):
-        cmd = "ifconfig %s | grep 'inet ' | awk '{print $2}'" % interface_name
-        with paramiko.SSHClient() as ssh:
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(remote_host, username=self.username,
-                        password=self.password)
-            _, stdout, _ = ssh.exec_command(cmd)
-            output = stdout.read().decode()
+    def get_card_ip(self, load_info, node_ip, card_name):
+        for node in load_info:
+            if node['nodeIP'] == node_ip:
+                for card in node['cards']:
+                    if card['name'] == card_name:
+                        return card['ip']
+        return None
 
-        return output.replace('\n', '')
+    def load_storage(self):
+        try:
+            with (open(current_app.config['DEPLOY_HOME'] + '/load.json', 'r')) as f:
+                data = f.read()
+            return json.loads(data)
+        except Exception as e:
+            self._logger.error(
+                f"Faild open {current_app.config['DEPLOY_HOME'] + '/load.json'} and to json ,Because: {e}")
+            return []
