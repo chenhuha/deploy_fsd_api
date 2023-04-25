@@ -1,0 +1,13 @@
+[Unit]
+Description=kly-deploy-api
+After= NetworkManager.service
+
+[Service]
+WorkingDirectory=/root/deploy/kly-deploy-api
+ExecStart=/root/deploy/kly-deploy-api/venv/bin/python3  /root/deploy/kly-deploy-api/app/api.py
+User=root
+Group=root
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
