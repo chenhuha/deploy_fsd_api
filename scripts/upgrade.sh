@@ -12,7 +12,7 @@ ceph_ansible_path=${deploy_path}/kly-deploy/ceph-ansible
 
 # 检测参数
 function check_param() {
-  if  [ ! -n "$upgrade_path" || ! -n "$version" ]; then
+  if  [[ ! -n "$upgrade_path" || ! -n "$version" ]]; then
     echo "缺少必要参数，例如: bash upgrade.sh [upgrade_path, /opt/upgrade_resource_v2.1.0] [version, v2.1.0]"
     exit 1
   fi
