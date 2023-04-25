@@ -1,4 +1,4 @@
-from common import  types, utils
+from common import types, utils
 from deploy.node_base import Node
 from flask_restful import reqparse, Resource
 
@@ -17,6 +17,8 @@ class DeployCount(Node):
         return parser.parse_args()
 
 # 通用pg计算
+
+
 class ReckRecommendConfigCommon(Resource, DeployCount):
     def __init__(self):
         self.voi_storage = {}
@@ -39,8 +41,8 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
             return types.DataModel().model(code=0, data=self.build_data({}, {}, storageSizeMax=only_voi_storage))
         else:
             pg_all = len(nodes) * len(self.ceph_data_storage) * 100
-            data = self.common_ceph_storage_data(
-                service_type, ceph_copy_num_default, pg_all)
+            data = self.common_ceph_storage_data(len(nodes),
+                                                 service_type, ceph_copy_num_default, pg_all)
             return types.DataModel().model(code=0, data=data)
 
     # 磁盘类型分类，VOI只支持一个盘
@@ -63,7 +65,7 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
         else:
             return str(utils.storagetypeformat(self.voi_storage['size'])) + 'GB'
 
-    def common_ceph_storage_data(self, service_type, ceph_copy_num_default, pg_all):
+    def common_ceph_storage_data(self, node_num, service_type, ceph_copy_num_default, pg_all):
         image_pgp = 0.1
         volume_pgp = 0.45
         cephfs_pgp = 0.45
@@ -77,7 +79,7 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
         cephfs_pool = utils.getNearPower(
             int(pg_all * cephfs_pgp / ceph_copy_num_default))
         ceph_max_size = str(
-            round(self.common_ceph_storage_size() * 0.8, 2)) + 'GB'
+            round(self.common_ceph_storage_size() * 0.8, 2) * node_num) + 'GB'
         return {
             "commonCustomCeph": {
                 "cephCopyNumDefault": ceph_copy_num_default
@@ -119,6 +121,6 @@ class ShowRecommendConfig(ReckRecommendConfigCommon):
             return types.DataModel().model(code=0, data=self.build_data({}, {}, storageSizeMax=only_voi_storage))
         else:
             pg_all = len(self.ceph_data_storage) * 100
-            data = self.common_ceph_storage_data(
-                service_type, ceph_copy_num_default, pg_all)
+            data = self.common_ceph_storage_data(1,
+                                                 service_type, ceph_copy_num_default, pg_all)
             return types.DataModel().model(code=0, data=data)
