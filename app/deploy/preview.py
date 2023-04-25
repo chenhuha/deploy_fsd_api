@@ -34,7 +34,7 @@ class Preview(Resource, DeployPreview):
         file_list = ["ceph-globals.yaml", "global_vars.yaml", "hosts"]
         global_vars_data = []
         for file in file_list:
-            with open(current_app.config['TEMPLATE_PATH'] + file, 'r') as f:
+            with open(current_app.config['ETC_EXAMPLE_PATH'] + file, 'r') as f:
                 global_vars_data.append({'shellName': file,
                            'shellContent': f.read()})
         return types.DataModel().model(code=0, data=global_vars_data)

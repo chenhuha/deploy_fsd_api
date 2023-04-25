@@ -28,7 +28,7 @@ COMMAND_ANSIBLE_PREPER_DEPLOY = 'ansible -i %s -e @%s -e @%s %s'
 COMMAND_SCP_FILE = 'sshpass -p %s scp -o StrictHostKeyChecking=no -r %s %s@%s:%s'
 
 # 数据库备份命令
-COMMAND_MYSQL_DUMP = 'mysqldump -u%s -p%s --all-databases > %s'
+COMMAND_MYSQL_DUMP = 'docker exec mariadb mysqldump -u%s -p%s -h %s --all-databases > %s'
 
 # tar解压命令
 COMMAND_TAR_UNZIP = 'tar zxf %s -C %s'

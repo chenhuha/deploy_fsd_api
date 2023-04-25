@@ -3,7 +3,7 @@ from flask import jsonify
 from common import constants, utils
 import os
 import yaml
-import tarfile
+import time
 from flask import current_app
 from threading import Thread
 
@@ -33,7 +33,7 @@ class Upgrade(Resource):
     def decompression(self, file_name):
         file_path = os.path.join(current_app.config['UPGRADE_SAVE_PATH'], file_name)
         try:
-            cmd = constants.COMMAND_TAR_UNZIP % (file_path,current_app.config['UPGRADE_SAVE_PATH'])
+            cmd = constants.COMMAND_TAR_UNZIP % (file_path, current_app.config['UPGRADE_SAVE_PATH'])
             _, result, _ = utils.execute(cmd)
             self._logger.info(f"Execute command to decompression zip package '{cmd}', result:{result}")
             data = self._data_build(True)
@@ -59,7 +59,7 @@ class Upgrade(Resource):
             configs = yaml.load(config_text)
             mariadb_root_password = configs['mariadb_root_password']
             cmd = constants.COMMAND_MYSQL_DUMP % ('root', mariadb_root_password, '127.0.0.1', os.path.join(
-                current_app.config['UPGRADE_SAVE_PATH'], 'upgrade_bak_{}.sql'.format(self.version)))
+                current_app.config['UPGRADE_SAVE_PATH'], 'upgrade_bak_{}_{}.sql'.format(self.version, time.strftime('%Y-%m-%d',time.localtime(time.time())))))
             _, result, _ = utils.execute(cmd)
             self._logger.info(f"Execute command '{cmd}', result:{result}")
             data = self._dump_mysql_data_buid(True)
