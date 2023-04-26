@@ -5,8 +5,8 @@ upgrade_path=$1
 version=$2
 
 deploy_path=/root/deploy
-etc_example_path=${deploy_path}/kly-deploy/etc_example
-ansible_path=${upgrade_package_path}/upgrade_resource/kly-deploy/ansible
+upgrade_etc_example_path=${upgrade_path}/kly-deploy/etc_example
+upgrade_ansible_path=${upgrade_path}/kly-deploy/ansible
 ceph_ansible_path=${deploy_path}/kly-deploy/ceph-ansible
 
 
@@ -18,20 +18,47 @@ function check_param() {
   fi
 }
 
-function deploy_upgrade_program() { 
-  # 部署平台升级
+# Deployment Platform upgrade
+function deploy_platform_upgrade() {
   mv ${deploy_path}/kly-deploy-api ${deploy_path}/kly-deploy-api_${version}
   cp -r ${upgrade_path}/kly-deploy-api ${deploy_path}/kly-deploy-api
   if [ -d "${deploy_path}/kly-deploy-api" ]; then
     systemctl daemon-reload && systemctl restart kly-deploy-api
+    status=$(systemctl is-active kly-deploy-api)
+    if [[ ! "$status" == "active" ]]; then
+       process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
+       exit 1
+    fi
   else
     process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
     exit 1
   fi
+}
 
+
+# Deploying front-end upgrade
+function deploy_front-end_upgrade(){
+  mv /var/www/html /var/www/html_${version}
+  cp -r ${upgrade_path}/html /var/www/
+  if [ -d "${upgrade_path}/html" ]; then
+    systemctl restart httpd
+    status=$(systemctl is-active httpd)
+    if [[ ! "$status" == "active" ]]; then
+       process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
+       exit 1
+    fi
+  else
+    process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
+    exit 1
+  fi
+}
+
+
+# Service upgrade
+function deploy_upgrade_program() { 
   # 服务升级
-  ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/95-upgrade.yaml>> /var/log/upgrade.log 2>&1
-  if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+  ansible-playbook -i ${deploy_path}/hosts -e @${deploy_path}/ceph-globals.yaml -e @${deploy_path}/global_vars.yaml -e @${upgrade_etc_example_path}/upgrade-globals.yaml ${upgrade_ansible_path}/95-upgrade.yaml> /var/log/upgrade.log 2>&1
+  if [ "$(grep 'failed=' /var/log/upgrade.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
     process "deploy_upgrade_program" "升级程序执行成功" true 2 "执行升级程序"
   else
     process "deploy_upgrade_program" "执行升级程序失败" false 2 "执行升级程序"
