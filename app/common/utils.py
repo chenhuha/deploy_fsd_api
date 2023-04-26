@@ -72,4 +72,5 @@ def yaml_to_dict(yamlPath):
 def get_version():
     with open('/etc/klcloud-release', 'r') as f:
         version = f.read()
+    version = version.strip()
     return version

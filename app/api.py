@@ -16,6 +16,7 @@ from upgrade.upload import Upload
 from upgrade.upgrade import Upgrade
 from upgrade.upgrade_history import UpgradeHistory
 from upgrade.status import UpgradeStatus
+from upgrade.upgrade import Upgrade
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource

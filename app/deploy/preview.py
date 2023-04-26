@@ -34,9 +34,9 @@ class Preview(Resource, DeployPreview):
         file_list = ["ceph-globals.yaml", "global_vars.yaml", "hosts"]
         global_vars_data = []
         for file in file_list:
-            with open(current_app.config['TEMPLATE_PATH'] + file, 'r') as f:
+            with open(current_app.config['ETC_EXAMPLE_PATH'] + file, 'r') as f:
                 global_vars_data.append({'shellName': file,
-                           'shellContent': f.read()})
+                                         'shellContent': f.read()})
         return types.DataModel().model(code=0, data=global_vars_data)
 
     def file_conversion(self, previews):
@@ -47,6 +47,9 @@ class Preview(Resource, DeployPreview):
         global_var_data = utils.yaml_to_dict(
             current_app.config['TEMPLATE_PATH'] + '/global_vars.yaml')
         global_var_data['external_vip_address'] = commonFixed['apiVip']
+        internal_vip_address = '169.168' + '.' + str(int(commonFixed['apiVip'].rsplit(
+            '.', 2)[-2])) + '.' + str(int(commonFixed['apiVip'].rsplit('.', 2)[-1]) - 1)
+        global_var_data['internal_vip_address'] = internal_vip_address
         global_var_data['voi_storage_num'] = commonFixed['voiResourceSize']
         global_var_data['vdi_storage_num'] = commonFixed['blockStorageSize']
         global_var_data['vdi_storage_num'] = commonFixed['shareDiskSize']
@@ -54,9 +57,16 @@ class Preview(Resource, DeployPreview):
         if previews['deployType'] == "COMM":
             global_var_data['deploy_comm'] = True
             global_var_data['deploy_edu'] = False
+            if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
+                global_var_data['fsd_deploy_mode'] = 'voi'
+            elif len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VDI":
+                global_var_data['fsd_deploy_mode'] = 'vdi'
+            else:
+                global_var_data['fsd_deploy_mode'] = 'all'
         elif previews['deployType'] == "EASYEDU":
             global_var_data['deploy_comm'] = False
             global_var_data['deploy_edu'] = True
+            global_var_data['fsd_deploy_mode'] = 'all'
         if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
             global_var_data['only_deploy_voi'] = True
         else:
@@ -155,7 +165,7 @@ class Preview(Resource, DeployPreview):
             'nic': []
         }
         card_nic_dict = {
-            'name':"",
+            'name': "",
             'role': 0,
             'salve': ""
         }
@@ -188,7 +198,7 @@ class Preview(Resource, DeployPreview):
                         cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4))))
                 else:
                     card_info['nic'].append("{}:null:{}:{}".format(
-                        cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4)),cards_nic['salve']))
+                        cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4)), cards_nic['salve']))
 
         return card_info
 
@@ -199,9 +209,11 @@ class Preview(Resource, DeployPreview):
         }
         for storage in storages:
             if storage['purpose'] == 'DATA':
-                storage_data['ceph_volume_data'].append('/dev/' + storage['name'])
+                storage_data['ceph_volume_data'].append(
+                    '/dev/' + storage['name'])
             elif storage['purpose'] == 'CACHE':
-                storage['cache2data'] = ['/dev/' + item for item in storage['cache2data']]
+                storage['cache2data'] = [
+                    '/dev/' + item for item in storage['cache2data']]
                 storage_data['ceph_volume_ceph_data'].append(
                     {'cache': '/dev/' + storage['name'], 'data': ' '.join(storage['cache2data'])})
         return storage_data
