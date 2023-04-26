@@ -47,9 +47,8 @@ class Preview(Resource, DeployPreview):
         global_var_data = utils.yaml_to_dict(
             current_app.config['TEMPLATE_PATH'] + '/global_vars.yaml')
         global_var_data['external_vip_address'] = commonFixed['apiVip']
-        internal_vip_address = '169.168' + '.' + str(int(commonFixed['apiVip'].rsplit(
-            '.', 2)[-2])) + '.' + str(int(commonFixed['apiVip'].rsplit('.', 2)[-1]) - 1)
-        global_var_data['internal_vip_address'] = internal_vip_address
+        global_var_data['internal_vip_address'] = '169.168' + \
+            '.' + str(commonFixed['apiVip'].split('.', 2)[-1])
         global_var_data['voi_storage_num'] = commonFixed['voiResourceSize']
         global_var_data['vdi_storage_num'] = commonFixed['blockStorageSize']
         global_var_data['cloud_disk_num'] = commonFixed['shareDiskSize']
