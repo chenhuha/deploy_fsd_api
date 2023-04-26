@@ -57,9 +57,16 @@ class Preview(Resource, DeployPreview):
         if previews['deployType'] == "COMM":
             global_var_data['deploy_comm'] = True
             global_var_data['deploy_edu'] = False
+            if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
+                global_var_data['fsd_deploy_mode'] = 'voi'
+            elif len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VDI":
+                global_var_data['fsd_deploy_mode'] = 'vdi'
+            else:
+                global_var_data['fsd_deploy_mode'] = 'all'
         elif previews['deployType'] == "EASYEDU":
             global_var_data['deploy_comm'] = False
             global_var_data['deploy_edu'] = True
+            global_var_data['fsd_deploy_mode'] = 'all'
         if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
             global_var_data['only_deploy_voi'] = True
         else:
