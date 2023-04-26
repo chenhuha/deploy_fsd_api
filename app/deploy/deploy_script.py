@@ -16,9 +16,11 @@ from deploy.node_base import Node
 class DeployScript(Preview, Node):
     def __init__(self):
         super().__init__()
-        self.history_path = current_app.config['DEPLOY_HOME'] + \
-            '/historyDeploy.yml'
-
+        self.history_path = os.path.join(current_app.config['DEPLOY_HOME'],'historyDeploy.yml')
+        self.global_vars_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'global_vars.yaml')
+        self.ceph_globals_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'ceph-globals.yaml')
+        self.hosts_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'hosts')
+    
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
@@ -182,17 +184,21 @@ class DeployScript(Preview, Node):
             return []
 
     def scp_deploy(self, nodes):
-        try:
-            for node in nodes:
+        cmds = []
+        for node in nodes:
+            for file in [self.history_path, self.global_vars_path, self.ceph_globals_path, self.hosts_path]:
                 cmd = constants.COMMAND_SCP_FILE % (
-                    current_app.config['NODE_PASS'], self.history_path, current_app.config['NODE_USER'], node, self.history_path)
+                    current_app.config['NODE_PASS'], file, current_app.config['NODE_USER'], node['nodeIP'], file)
+                cmds.append(cmd)
+        try:
+            for cmd in cmds:
                 _, result, _ = utils.execute(cmd)
                 self._logger.info(f"Execute command '{cmd}', result:{result}")
         except Exception as e:
             self._logger.error(
                 f"Execute command to copy history is faild ,Because: {e}")
 
-    def version(self, previews):
+    def version(self):
         if os.path.exists('/etc/klcloud-release'):
             with open('/etc/klcloud-release', 'r') as f:
                 version = f.read()
