@@ -218,10 +218,7 @@ class DeployScript(Preview, Node):
         else:
             with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
                 f.write(json.dumps({
-                    "message": "",
-                    "startTime": int(time.time() * 1000),
-                    "endtime": int(time.time() * 1000),
-                    "history_data": [{
+                    [{
                         "version": "_",
                         "new_version": version,
                         "result": True,
