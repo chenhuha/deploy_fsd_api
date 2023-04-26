@@ -24,63 +24,70 @@ class UpgradeHistory(Resource, Node):
                             location='args', help='search query')
         parser.add_argument('new_version', type=str,
                             location='args', help='search query')
-        parser.add_argument('endtime', type=int,
-                            location='args', help='search query')
+        parser.add_argument('start_time', type=int,
+                            location='args', help='start time')
+        parser.add_argument('end_time', type=int,
+                            location='args', help='end time')
         parser.add_argument('result', type=str,
                             location='args', help='search query')
         args = parser.parse_args()
 
-        page = args['page'] or 1
-        size = args['size'] or 10
-        sort = args['sort'] or None
-        version = args['version'] or None
-        new_version = args['new_version'] or None
-        endtime = args['endtime'] or None
-        result = args['result'] or None
-
-        data = self.data_format(page, size, sort, version,
-                                new_version, endtime, result)
+        page = args.get('page', 1)
+        size = args.get('size', 10)
+        sort = args.get('sort')
+        version = args.get('version')
+        new_version = args.get('new_version')
+        start_time = args.get('start_time')
+        end_time = args.get('end_time')
+        result = args.get('result')
+        history_data = self.get_upgrade_history()
+        data = self.filter_and_paginate_history_data(
+            history_data=history_data,
+            page=page or 1,
+            size=size or 10,
+            version=version,
+            new_version=new_version,
+            start_time=start_time,
+            end_time=end_time,
+            result=result,
+            sort=sort)
 
         return types.DataModel().model(code=0, data=data)
 
-    def data_format(self, page, size, sort, version, new_version, endtime, result):
-        history_data, total = self.get_upgrade_history()
-        if version:
-            history_data = [
-                d for d in history_data if d['version'] == version]
-            total = len(history_data)
-        if new_version:
-            history_data = [
-                d for d in history_data if d['new_version'] == new_version]
-            total = len(history_data)
-        if endtime:
-            history_data = [
-                d for d in history_data if d['endtime'] == endtime]
-            total = len(history_data)
-        if result:
-            result = result.lower() == 'true'
-            history_data = [
-                d for d in history_data if d['result'] == result]
-            total = len(history_data)
-        if sort == 'endtime':
-            history_data = sorted(
-                history_data, key=lambda x: x['endtime'], reverse=True)
+    def delete(self):
+        data = self.del_deploy_history()
 
+        return types.DataModel().model(code=0, data=data)
+
+    def filter_and_paginate_history_data(self, history_data, page, size, version, new_version, start_time, end_time, result, sort):
+        # 过滤数据
+        if version:
+            history_data = [d for d in history_data if d['version'] == version]
+        if new_version:
+            history_data = [d for d in history_data if d['new_version'] == new_version]
+        if start_time and end_time:
+            history_data = [d for d in history_data if d['endtime'] >= start_time and d['endtime'] <= end_time]
+        if result is not None:
+            result = result.lower() == 'true'
+            history_data = [d for d in history_data if d['result'] == result]
+
+        # 排序数据
+        if sort == 'endtime':
+            history_data = sorted(history_data, key=lambda x: x['endtime'], reverse=True)
+
+        # 分页数据
         start_index = (page - 1) * size
         end_index = start_index + size
         history_result = history_data[start_index:end_index]
 
+        # 格式化数据
+        total = len(history_data)
         data = {
             'total': total,
             'history_data': history_result
         }
 
         return data
-
-    def delete(self):
-        data = self.del_deploy_history()
-
-        return types.DataModel().model(code=0, data=data)
 
     def get_upgrade_history(self):
         history_file = self.deploy_home + '/historyUpgrade.yml'
@@ -93,10 +100,11 @@ class UpgradeHistory(Resource, Node):
                 content = json.load(f)
             data = content
         except Exception as e:
-            self._logger.error(f'open file historyUpgrade.yml failed, Because: {e}')
+            self._logger.error(
+                f'open file historyUpgrade.yml failed, Because: {e}')
             data = []
 
-        return data, len(data)
+        return data
 
     def del_deploy_history(self):
         history_file = self.deploy_home + '/historyUpgrade.yml'
