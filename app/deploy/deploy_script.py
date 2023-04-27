@@ -3,6 +3,7 @@ import json
 import yaml
 import subprocess
 import time
+import shutil
 from openpyxl import load_workbook
 from common import types, utils, constants
 from deploy.preview import Preview
@@ -33,7 +34,7 @@ class DeployScript(Preview, Node):
         for config in config_file:
             file_path = os.path.join(
                 current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
-            self._config_bak(config_file)
+            self._config_bak(file_path)
             with open(file_path, 'w', encoding='UTF-8') as f:
                 f.write(config['shellContent'])
         self.control_deploy(preview_info)
