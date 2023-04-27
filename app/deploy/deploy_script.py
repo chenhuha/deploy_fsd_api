@@ -26,7 +26,7 @@ class DeployScript(Preview, Node):
         self.hosts_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'hosts')
         self.bak_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'], time.strftime(
-            '%Y-%m-%d-%H_%M_%S', time.localtime(time.time())) + '_example_bak/')
+            '%Y-%m-%d', time.localtime(time.time())) + '_example_bak/')
     
     def post(self):
         preview_info = self.get_preview_from_request()
@@ -34,7 +34,8 @@ class DeployScript(Preview, Node):
         for config in config_file:
             file_path = os.path.join(
                 current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
-            self._config_bak(file_path)
+            self._config_bak(
+                current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
             with open(file_path, 'w', encoding='UTF-8') as f:
                 f.write(config['shellContent'])
         self.control_deploy(preview_info)
@@ -62,10 +63,14 @@ class DeployScript(Preview, Node):
             current_app._get_current_object(), results, previews, deploy_uuid, int(time.time() * 1000)))
         thread.start()
 
-    def _config_bak(self, file_path):
+    def _config_bak(self, file_path, file_name):
         if not os.path.exists(self.bak_path):
             os.makedirs(self.bak_path)
-        shutil.copy(file_path, self.bak_path)
+        filepath = os.path.join(file_path, file_name)
+        bak_filename = file_name + \
+            time.strftime('%H-%M-%S', time.localtime(time.time())) + '_bak'
+        bak_file_path = os.path.join(self.bak_path, bak_filename)
+        shutil.copy(filepath,  bak_file_path)
 
     def _shell_return_listen(self, app, subprocess_1, previews, deploy_uuid, start_time):
         with app.app_context():
