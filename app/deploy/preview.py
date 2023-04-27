@@ -87,7 +87,7 @@ class Preview(Resource, DeployPreview):
         ceph_global_var_data['volumes_poll_pgp_num'] = commonCustomPool['volumePoolPgpNum']
         ceph_global_var_data['cephfs_pool_default_pg_num'] = commonCustomPool['cephfsPoolPgNum']
         ceph_global_var_data['cephfs_pool_default_pgp_num'] = commonCustomPool['cephfsPoolPgpNum']
-        ceph_global_var_data['ceph_aio'] = self._aio_bool(previews['nodes'])
+        ceph_global_var_data['ceph_aio'] = True if len(previews['nodes']) == 1 else False
         ceph_global_var_data['bcache'] = self._bcache_bool(previews['nodes'])
         ceph_global_var = yaml.dump(ceph_global_var_data, sort_keys=False)
         ceph_global_var_dict = {
@@ -135,15 +135,6 @@ class Preview(Resource, DeployPreview):
             data = f.read()
         vars = Template(data).render(nodes)
         return vars
-
-    def _aio_bool(self, nodes):
-        aio = False
-        if len(nodes) == 1:
-            for node in nodes:
-                if len(node['storages']) == 1:
-                    aio = True
-                    break
-        return aio
 
     def _bcache_bool(self, nodes):
         bcache = False
