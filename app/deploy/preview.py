@@ -174,9 +174,9 @@ class Preview(Resource, DeployPreview):
             card_nic['name'] = card['name']
             if 'EXTRANET' in card['purpose']:
                 card_nic['role'] += 4
-                if card['flat']:
+                if card.get('flat'):
                     card_info['flat_cards'].append(card['name'])
-                if card['vlan']:
+                if card.get('vlan'):
                     card_info['vlan_cards'][card['name']] = card['externalIds']
             if 'MANAGEMENT' in card['purpose']:
                 card_nic['role'] += 8

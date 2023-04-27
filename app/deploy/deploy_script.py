@@ -16,16 +16,25 @@ from deploy.node_base import Node
 class DeployScript(Preview, Node):
     def __init__(self):
         super().__init__()
-        self.history_path = os.path.join(current_app.config['DEPLOY_HOME'],'historyDeploy.yml')
-        self.global_vars_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'global_vars.yaml')
-        self.ceph_globals_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'ceph-globals.yaml')
-        self.hosts_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'hosts')
+        self.history_path = os.path.join(
+            current_app.config['DEPLOY_HOME'], 'historyDeploy.yml')
+        self.global_vars_path = os.path.join(
+            current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml')
+        self.ceph_globals_path = os.path.join(
+            current_app.config['ETC_EXAMPLE_PATH'], 'ceph-globals.yaml')
+        self.hosts_path = os.path.join(
+            current_app.config['ETC_EXAMPLE_PATH'], 'hosts')
+        self.bak_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'], time.strftime(
+            '%Y-%m-%d-%H_%M_%S', time.localtime(time.time())) + '_example_bak/')
     
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
         for config in config_file:
-            with open(current_app.config['ETC_EXAMPLE_PATH'] + config['shellName'], 'w', encoding='UTF-8') as f:
+            file_path = os.path.join(
+                current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
+            self._config_bak(config_file)
+            with open(file_path, 'w', encoding='UTF-8') as f:
                 f.write(config['shellContent'])
         self.control_deploy(preview_info)
         return types.DataModel().model(code=0, data="")
@@ -52,6 +61,11 @@ class DeployScript(Preview, Node):
             current_app._get_current_object(), results, previews, deploy_uuid, int(time.time() * 1000)))
         thread.start()
 
+    def _config_bak(self, file_path):
+        if not os.path.exists(self.bak_path):
+            os.makedirs(self.bak_path)
+        shutil.copy(file_path, self.bak_path)
+
     def _shell_return_listen(self, app, subprocess_1, previews, deploy_uuid, start_time):
         with app.app_context():
             subprocess_1.wait()
@@ -68,7 +82,7 @@ class DeployScript(Preview, Node):
             self._write_history_file(results)
             self._write_node_info_csv(previews['nodes'])
             self.scp_deploy(previews['nodes'])
-            version = self.version(previews)
+            version = self.version()
             self._write_upgrade_file(version)
 
     def _write_history_file(self, result):
@@ -203,8 +217,8 @@ class DeployScript(Preview, Node):
             with open('/etc/klcloud-release', 'r') as f:
                 version = f.read()
         else:
-            with open(os.path.join(current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml', 'r')) as f:
-                global_var = yaml.load(f.read())
+            with open(os.path.join(current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml'), 'r') as f:
+                global_var = yaml.load(f.read(),Loader=yaml.FullLoader)
             if global_var['deploy_edu']:
                 version = f"EDU-v{global_var['fsd_default_tag']}"
             else:
@@ -216,13 +230,17 @@ class DeployScript(Preview, Node):
         if os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')):
             pass
         else:
-            with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
-                f.write(json.dumps({
-                    [{
-                        "version": "_",
-                        "new_version": version,
-                        "result": True,
-                        "message": "_",
-                        "endtime": int(time.time() * 1000)
-                    }]
-                }))
+            try:
+                with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
+                    f.write(json.dumps(
+                        [{
+                            "version": "_",
+                            "new_version": version,
+                            "result": True,
+                            "message": "_",
+                            "endtime": int(time.time() * 1000)
+                        }]
+                    ))
+            except Exception as e:
+                self._logger.error(
+                f"open or create {os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml'))}  faild ,Because: {e}")
