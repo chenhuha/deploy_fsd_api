@@ -68,7 +68,7 @@ class DeployScript(Preview, Node):
             self._write_history_file(results)
             self._write_node_info_csv(previews['nodes'])
             self.scp_deploy(previews['nodes'])
-            version = self.version(previews)
+            version = self.version()
             self._write_upgrade_file(version)
 
     def _write_history_file(self, result):
@@ -203,8 +203,8 @@ class DeployScript(Preview, Node):
             with open('/etc/klcloud-release', 'r') as f:
                 version = f.read()
         else:
-            with open(os.path.join(current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml', 'r')) as f:
-                global_var = yaml.load(f.read())
+            with open(os.path.join(current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml'), 'r') as f:
+                global_var = yaml.load(f.read(),Loader=yaml.FullLoader)
             if global_var['deploy_edu']:
                 version = f"EDU-v{global_var['fsd_default_tag']}"
             else:
@@ -216,13 +216,17 @@ class DeployScript(Preview, Node):
         if os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')):
             pass
         else:
-            with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
-                f.write(json.dumps({
-                    [{
-                        "version": "_",
-                        "new_version": version,
-                        "result": True,
-                        "message": "_",
-                        "endtime": int(time.time() * 1000)
-                    }]
-                }))
+            try:
+                with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
+                    f.write(json.dumps(
+                        [{
+                            "version": "_",
+                            "new_version": version,
+                            "result": True,
+                            "message": "_",
+                            "endtime": int(time.time() * 1000)
+                        }]
+                    ))
+            except Exception as e:
+                self._logger.error(
+                f"open or create {os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml'))}  faild ,Because: {e}")
