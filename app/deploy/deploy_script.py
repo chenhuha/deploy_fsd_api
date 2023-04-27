@@ -16,16 +16,25 @@ from deploy.node_base import Node
 class DeployScript(Preview, Node):
     def __init__(self):
         super().__init__()
-        self.history_path = os.path.join(current_app.config['DEPLOY_HOME'],'historyDeploy.yml')
-        self.global_vars_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'global_vars.yaml')
-        self.ceph_globals_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'ceph-globals.yaml')
-        self.hosts_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'],'hosts')
+        self.history_path = os.path.join(
+            current_app.config['DEPLOY_HOME'], 'historyDeploy.yml')
+        self.global_vars_path = os.path.join(
+            current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml')
+        self.ceph_globals_path = os.path.join(
+            current_app.config['ETC_EXAMPLE_PATH'], 'ceph-globals.yaml')
+        self.hosts_path = os.path.join(
+            current_app.config['ETC_EXAMPLE_PATH'], 'hosts')
+        self.bak_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'], time.strftime(
+            '%Y-%m-%d-%H_%M_%S', time.localtime(time.time())) + '_example_bak/')
     
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
         for config in config_file:
-            with open(current_app.config['ETC_EXAMPLE_PATH'] + config['shellName'], 'w', encoding='UTF-8') as f:
+            file_path = os.path.join(
+                current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
+            self._config_bak(config_file)
+            with open(file_path, 'w', encoding='UTF-8') as f:
                 f.write(config['shellContent'])
         self.control_deploy(preview_info)
         return types.DataModel().model(code=0, data="")
@@ -51,6 +60,11 @@ class DeployScript(Preview, Node):
         thread = Thread(target=self._shell_return_listen, args=(
             current_app._get_current_object(), results, previews, deploy_uuid, int(time.time() * 1000)))
         thread.start()
+
+    def _config_bak(self, file_path):
+        if not os.path.exists(self.bak_path):
+            os.makedirs(self.bak_path)
+        shutil.copy(file_path, self.bak_path)
 
     def _shell_return_listen(self, app, subprocess_1, previews, deploy_uuid, start_time):
         with app.app_context():
