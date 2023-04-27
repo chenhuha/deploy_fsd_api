@@ -7,7 +7,7 @@ deploy_type=$2
 deploy_ceph_flag=$3
 deploy_uuid=$4
 deploy_path=/root/deploy
-etc_example_path=${deploy_path}
+etc_example_path=${deploy_path}/kly-deploy/etc_example
 ansible_path=${deploy_path}/kly-deploy/ansible
 ceph_ansible_path=${deploy_path}/kly-deploy/ceph-ansible
 
@@ -27,7 +27,11 @@ function deploy() {
     webhook_all_process_first
     #准备部署环境
     ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml > /var/log/deploy.log 2>&1
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml > /var/log/deploy.log 2>&1
+    if ! [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+      webhook_process "ready_environment" "准备部署环境失败" false 1 "准备部署环境"
+      exit 1
+    fi
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml >> /var/log/deploy.log 2>&1
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "成功" true 1 "准备部署环境"
     else
@@ -82,6 +86,10 @@ function deploy() {
     fi
     #准备部署环境
     ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml >> /var/log/deploy.log 2>&1
+    if ! [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+      webhook_process "ready_environment" "准备部署环境失败" false 1 "准备部署环境"
+      exit 1
+    fi
     ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml >> /var/log/deploy.log 2>&1
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "成功" true 3 "准备部署环境"
@@ -150,4 +158,3 @@ function webhook_process() {
 #Main function
 check_param
 deploy
-
