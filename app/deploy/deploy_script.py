@@ -237,7 +237,7 @@ class DeployScript(Preview, Node):
             pass
         else:
             try:
-                with open(os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')), 'w') as f:
+                with open(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml'), 'w') as f:
                     f.write(json.dumps(
                         [{
                             "version": "_",
