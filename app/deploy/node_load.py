@@ -16,10 +16,12 @@ class NodeLoad(Resource, Node):
     def post(self):
         data = self.get_device_info()
 
-        # 使用 lambda 表达式查找 data 中每个字典的 nodeIP 在 self.nodes 中的位置
-        lookup = lambda node: self.nodes.index(next(item for item in self.nodes if item["nodeIP"] == node["nodeIP"]))
-        # 根据 lookup 函数对 data 进行排序
-        data.sort(key=lookup)
+        if len(data) > 1:
+            # 使用 lambda 表达式查找 data 中每个字典的 nodeIP 在 self.nodes 中的位置
+            lookup = lambda node: self.nodes.index(next(item for item in self.nodes if item["nodeIP"] == node["nodeIP"]))
+            # 根据 lookup 函数对 data 进行排序
+            data.sort(key=lookup)
+        
         self._write_load_info(data)
         
         return types.DataModel().model(code=0, data=data)
