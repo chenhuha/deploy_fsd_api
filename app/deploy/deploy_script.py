@@ -25,6 +25,10 @@ class DeployScript(Preview, Node):
             current_app.config['ETC_EXAMPLE_PATH'], 'ceph-globals.yaml')
         self.hosts_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'hosts')
+        self.history_upgrade_path = os.path.join(
+            current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')
+        self.deploy_info_path = os.path.join(
+            current_app.config['DEPLOY_HOME'], 'deploy_node_info.xlsx')
         self.bak_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'], time.strftime(
             '%Y-%m-%d', time.localtime(time.time())) + '_example_bak/')
     
@@ -87,9 +91,9 @@ class DeployScript(Preview, Node):
             )
             self._write_history_file(results)
             self._write_node_info_csv(previews['nodes'])
-            self.scp_deploy(previews['nodes'])
             version = self.version()
             self._write_upgrade_file(version)
+            self.scp_deploy(previews['nodes'])
 
     def _write_history_file(self, result):
         results_yaml = yaml.dump(result, sort_keys=False, allow_unicode=True)
@@ -101,8 +105,7 @@ class DeployScript(Preview, Node):
                 f"Faild write {self.history_path} ,Because: {e}")
 
     def _write_node_info_csv(self, nodes):
-        book = load_workbook(
-            current_app.config['DEPLOY_HOME'] + '/deploy_node_info.xlsx')
+        book = load_workbook(self.deploy_info_path)
         template_sheet = book['mould']
         for node in nodes:
             target_sheet = book.copy_worksheet(template_sheet)
@@ -118,7 +121,7 @@ class DeployScript(Preview, Node):
             self._write_info_csv(hdd_info, target_sheet, 3, 16)
             self._write_info_csv(ssd_info, target_sheet, 3, 22)
 
-        book.save(current_app.config['DEPLOY_HOME'] + '/deploy_node_info.xlsx')
+        book.save(self.deploy_info_path)
         book.close()
 
     def _write_info_csv(self, infos, sheet, start_row, start_col):
@@ -206,7 +209,7 @@ class DeployScript(Preview, Node):
     def scp_deploy(self, nodes):
         cmds = []
         for node in nodes:
-            for file in [self.history_path, self.global_vars_path, self.ceph_globals_path, self.hosts_path]:
+            for file in [self.history_path, self.global_vars_path, self.ceph_globals_path, self.hosts_path, self.history_upgrade_path, self.deploy_info_path]:
                 cmd = constants.COMMAND_SCP_FILE % (
                     current_app.config['NODE_PASS'], file, current_app.config['NODE_USER'], node['nodeIP'], file)
                 cmds.append(cmd)
@@ -233,11 +236,11 @@ class DeployScript(Preview, Node):
                 f.write(version)
 
     def _write_upgrade_file(self, version):
-        if os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')):
+        if os.path.exists(self.history_upgrade_path):
             pass
         else:
             try:
-                with open(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml'), 'w') as f:
+                with open(self.history_upgrade_path, 'w') as f:
                     f.write(json.dumps(
                         [{
                             "version": "_",
@@ -249,4 +252,4 @@ class DeployScript(Preview, Node):
                     ))
             except Exception as e:
                 self._logger.error(
-                f"open or create {os.path.exists(os.path.join(current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml'))}  faild ,Because: {e}")
+                    f"open or create {self.history_upgrade_path}  faild ,Because: {e}")
