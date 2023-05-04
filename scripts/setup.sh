@@ -114,7 +114,7 @@ function deploy() {
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "deploy_trochilus" "成功" true 5 "部署虚拟化系统"
     else
-      webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 5 "部署虚拟化系统"
+      webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 5 "deploy Virtual system"
       exit 1
     fi
     exit 0
@@ -125,7 +125,6 @@ function deploy() {
 function webhook_all_process_first() {
   #所有流程
   json="[{\"en\":\"check_param\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"检测部署脚本\"},{\"en\":\"ready_environment\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"准备部署环境\"},{\"en\":\"deploy_ceph\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"部署文件系统\"},{\"en\":\"deploy_trochilus\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"部署虚拟化系统\"}]"
-  # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/start
   echo $json > /tmp/deploy_process_status
   #补发前1步
   webhook_process "check_param" "成功" true 0 "检测部署脚本"
@@ -137,7 +136,6 @@ function webhook_all_process_retry() {
   #所有流程
   json="[{\"en\":\"check_param\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"检测部署脚本\"},{\"en\":\"clear_trochilus\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"清除虚拟化系统\"},{\"en\":\"clear_ceph\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"清除文件系统\"},{\"en\":\"ready_environment\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"准备部署环境\"},{\"en\":\"deploy_ceph\",\"message\":\"\",\"result\":true,\"sort\":4,\"zh\":\"部署文件系统\"},{\"en\":\"deploy_trochilus\",\"message\":\"\",\"result\":true,\"sort\":5,\"zh\":\"部署虚拟化系统\"}]"
   echo $json > /tmp/deploy_process_status
-  # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/start
   #补发前1步
   webhook_process "check_param" "成功" true 0 "检测部署脚本"
   echo ""
@@ -147,7 +145,6 @@ function webhook_all_process_retry() {
 json_array=()
 function webhook_process() {
   json="{\"en\":\"$1\",\"message\":\"$2\",\"result\":$3,\"sort\":$4,\"zh\":\"$5\"}"
-  # curl -s -H "Content-Type:application/json" -X POST --data "${json}" http://127.0.0.1:1236/api/webhook/process/middle
   json_array+=("$json")
   json_list=$(echo "${json_array[@]}" | jq -s '.')
   echo "$json_list" > /dev/null
