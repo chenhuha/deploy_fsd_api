@@ -56,7 +56,7 @@ function deploy() {
     if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "deploy_trochilus" "成功" true 3 "部署虚拟化系统"
     else
-    webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 3 "部署虚拟化系统"
+    webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 3 "deploy Virtual system""
     exit 1
     fi
     exit 0
