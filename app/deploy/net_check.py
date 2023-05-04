@@ -33,10 +33,10 @@ class NetCheck(Resource, Node):
         source_file = os.path.join(self.template_path, "deployExcel.xlsx")
         try:
             shutil.copyfile(source_file, node_info_file)
-        except OSError as e:
-            self._logger.error('no such file deployExcel.xlsx, %s', e)
-        self.write_data_to_excel(node_info_file, data)
-
+            self.write_data_to_excel(node_info_file, data)
+        except Exception as e:
+            self._logger.error('write data to excel error, %s', e)
+        
         return types.DataModel().model(code=0, data=data)
 
     # 单节点
@@ -105,10 +105,10 @@ class NetCheck(Resource, Node):
                     current_node['management']['ip'], node_ip, port)
                 client_result, server_result = self.output_format_different_node(
                     output, purpose)
-                return client_result, server_result
             except Exception as e:
                 self._logger.error('get iperf3_client output failed, %s', e)
-                return self.output_format_null_node(current_node, node, purpose)
+                client_result, server_result = self.output_format_null_node(current_node, node, purpose)
+            return client_result, server_result
 
         # execute iperf3 client and collect results
         for i, current_node in enumerate(self.node_list):
@@ -255,7 +255,7 @@ class NetCheck(Resource, Node):
         packet_loss_rate = '-'
         status = 1
 
-        result = {
+        client_result = {
             'sourceIp': source_ip,
             'sourceHostname': source_hostname,
             'destIp': dest_ip,
@@ -263,11 +263,23 @@ class NetCheck(Resource, Node):
             'speed': speed,
             'realSpeed': real_speed,
             'mtu': mtu,
-            'packetLossRate': packet_loss_rate,
+            'plr': packet_loss_rate,
             'status': status
         }
 
-        return result
+        server_result = {
+            'sourceIp': dest_ip,
+            'sourceHostname': dest_hostname,
+            'destIp': source_ip,
+            'destHostname': source_hostname,
+            'speed': speed,
+            'realSpeed': real_speed,
+            'mtu': mtu,
+            'plr': packet_loss_rate,
+            'status': status
+        }
+        
+        return client_result, server_result
 
     def combine_results(self, api_result, ceph_cluster_result, ceph_public_result):
         return {
