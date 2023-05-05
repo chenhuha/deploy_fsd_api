@@ -234,7 +234,8 @@ class DeployScript(Preview, Node):
                 version = f"COMM-v{global_var['fsd_default_tag']}"
             with open('/etc/klclould-release', 'w') as f:
                 f.write(version)
-
+        return version.strip()
+ 
     def _write_upgrade_file(self, version):
         if os.path.exists(self.history_upgrade_path):
             pass
