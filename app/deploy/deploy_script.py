@@ -232,7 +232,7 @@ class DeployScript(Preview, Node):
                 version = f"EDU-v{global_var['fsd_default_tag']}"
             else:
                 version = f"COMM-v{global_var['fsd_default_tag']}"
-            with open('/etc/klclould-release', 'w') as f:
+            with open('/etc/klcloud-release', 'w') as f:
                 f.write(version)
         return version.strip()
  
