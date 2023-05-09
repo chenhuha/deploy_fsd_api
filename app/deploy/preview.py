@@ -68,6 +68,8 @@ class Preview(Resource, DeployPreview):
             global_var_data['fsd_deploy_mode'] = 'all'
         if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
             global_var_data['only_deploy_voi'] = True
+            voi_storage = self._get_edu_voi_storage(previews)
+            global_var_data['voi_data_device'] =  voi_storage
         else:
             global_var_data['only_deploy_voi'] = False
         global_var_data['fsd_voi_version'] == previews['voiDeployType']
@@ -207,3 +209,12 @@ class Preview(Resource, DeployPreview):
                 storage_data['ceph_volume_ceph_data'].append(
                     {'cache': '/dev/' + storage['name'], 'data': ' '.join(storage['cache2data'])})
         return storage_data
+
+    def _get_edu_voi_storage(self,previews):
+        storage_name = ""
+        for node in previews['nodes']:
+            for storage in node['storages']:
+                if storage['purpose'] == 'VOIDATA':
+                    storage_name = '/dev/' + storage['name']
+                    break
+        return storage_name
