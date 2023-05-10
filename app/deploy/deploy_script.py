@@ -26,7 +26,7 @@ class DeployScript(Preview, Node):
         self.hosts_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'hosts')
         self.history_upgrade_path = os.path.join(
-            current_app.config['DEPLOY_HOME'], 'historyUpgrade.yml')
+            current_app.config['DEPLOY_HOME'], 'historyUpgrade.json')
         self.deploy_info_path = os.path.join(
             current_app.config['DEPLOY_HOME'], 'deploy_node_info.xlsx')
         self.bak_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'], time.strftime(
@@ -53,7 +53,7 @@ class DeployScript(Preview, Node):
         ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
         deploy_key = previews['key']
         deploy_uuid = str(uuid1())
-        results = types.DataModel().history_model(
+        results = types.DataModel().history_deploy_model(
             paramsJson=json.dumps(previews),
             uuid=deploy_uuid,
             startTime=int(time.time() * 1000)
@@ -81,7 +81,7 @@ class DeployScript(Preview, Node):
             subprocess_1.wait()
             status_results = Status.get_now_list(self)
             end_results = status_results[-1]
-            results = types.DataModel().history_model(
+            results = types.DataModel().history_deploy_model(
                 log=str(subprocess_1.stdout.read(), encoding='utf-8'),
                 paramsJson=json.dumps(previews),
                 uuid=deploy_uuid,
@@ -232,8 +232,9 @@ class DeployScript(Preview, Node):
                 version = f"EDU-v{global_var['fsd_default_tag']}"
             else:
                 version = f"COMM-v{global_var['fsd_default_tag']}"
-            with open('/etc/klclould-release', 'w') as f:
+            with open('/etc/klcloud-release', 'w') as f:
                 f.write(version)
+        return version
 
     def _write_upgrade_file(self, version):
         if os.path.exists(self.history_upgrade_path):
@@ -243,10 +244,10 @@ class DeployScript(Preview, Node):
                 with open(self.history_upgrade_path, 'w') as f:
                     f.write(json.dumps(
                         [{
-                            "version": "_",
+                            "version": "-",
                             "new_version": version,
                             "result": True,
-                            "message": "_",
+                            "message": "-",
                             "endtime": int(time.time() * 1000)
                         }]
                     ))

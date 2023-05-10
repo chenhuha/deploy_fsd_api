@@ -90,7 +90,7 @@ class UpgradeHistory(Resource, Node):
         return data
 
     def get_upgrade_history(self):
-        history_file = self.deploy_home + '/historyUpgrade.yml'
+        history_file = self.deploy_home + '/historyUpgrade.json'
 
         if not os.path.isfile(history_file):
             return []
@@ -101,13 +101,13 @@ class UpgradeHistory(Resource, Node):
             data = content
         except Exception as e:
             self._logger.error(
-                f'open file historyUpgrade.yml failed, Because: {e}')
+                f'open file historyUpgrade.json failed, Because: {e}')
             data = []
 
         return data
 
     def del_deploy_history(self):
-        history_file = self.deploy_home + '/historyUpgrade.yml'
+        history_file = self.deploy_home + '/historyUpgrade.json'
 
         if os.path.isfile(history_file):
             os.remove(history_file)
