@@ -40,12 +40,11 @@ class Upload(Resource):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() == self.ALLOWED_EXTENSIONS
 
     def ensure_upgrade_dir_exists(self):
-        upgrade_dir = "/opt/kly-upgrade/"
+        upgrade_dir = '/opt/kly-upgrade/'
 
         try:
             if os.path.exists(upgrade_dir):
                 shutil.rmtree(upgrade_dir)
-            else:
-                os.makedirs(upgrade_dir)
+            os.makedirs(upgrade_dir)
         except OSError as e:
             self._logger.error(f'Failed operation {upgrade_dir}, Because: {e}')
