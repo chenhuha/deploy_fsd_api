@@ -17,6 +17,9 @@ from upgrade.upgrade import Upgrade
 from upgrade.upgrade_history import UpgradeHistory
 from upgrade.status import UpgradeStatus
 from upgrade.upgrade import Upgrade
+from extension.load import ExtendNodeLoad
+from extension.net_chek import ExtendNetCheck,ExtendNetCheckCommon
+from extension.recommend_config import ExtendReckRecommendConfigCommon,ExtendShowRecommendConfig
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource
@@ -47,8 +50,8 @@ class Version(Resource):
 api.add_resource(Version, '/')
 
 # Deploy api register
-api.add_resource(NodeCheck, '/api/deploy/node/check')
-api.add_resource(NodeSecret, '/api/deploy/node/secret')
+api.add_resource(NodeCheck, '/api/deploy/node/check','/api/extend/node/check')
+api.add_resource(NodeSecret, '/api/deploy/node/secret', '/api/extend/node/secret')
 api.add_resource(NodeLoad, '/api/deploy/node/load')
 api.add_resource(NetCheck, '/api/deploy/node/netCheck')
 api.add_resource(ReckRecommendConfigCommon,
@@ -71,6 +74,13 @@ api.add_resource(UpgradeStatus, '/api/upgrade/status')
 
 # Extension api register
 
+api.add_resource(ExtendNodeLoad, '/api/extend/node/load')
+api.add_resource(ExtendNetCheck, '/api/extend/node/netCheck')
+api.add_resource(ExtendReckRecommendConfigCommon, 
+                 '/api/extend/node/reckRecommendConfigCommon')
+api.add_resource(ExtendShowRecommendConfig,
+                 '/api/extend/node/showRecommendConfig')
+api.add_resource(ExtendNetCheckCommon, '/api/extend/node/netCheck/common')
 
 if __name__ == '__main__':
     port = app.config['PORT']
