@@ -12,7 +12,8 @@ class DataModel:
             'path': path,
             'data': data
         })
-    def history_model(self, startTime, paramsJson, log="",result="", message="" ,key="deploy:klcloud-fsd", id=1, uuid=""):    
+    
+    def history_deploy_model(self, startTime, paramsJson, log="",result="", message="" ,key="deploy:klcloud-fsd", id=1, uuid=""):    
         return {
             'paramsJson': paramsJson,
             'log': log,
@@ -23,4 +24,13 @@ class DataModel:
             'id': id,
             'endtime': int(time.time() * 1000),
             'key': key
+        }
+
+    def history_upgarde_model(self, new_version, version='', result='', message=''):    
+        return {
+            'version': version,
+            'new_version': new_version,
+            'result': result,
+            'message': message,
+            'endtime':  int(time.time() * 1000)
         }

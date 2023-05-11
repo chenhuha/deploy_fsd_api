@@ -20,8 +20,7 @@ class Status(Resource, Node):
         data = self.data_format(key)
         return types.DataModel().model(code=0, data=data)
 
-    def data_format(self, key):
-        
+    def data_format(self, key):    
         data = {
             "processList": self.process_list,
             "nowList": self.now_list,
@@ -56,7 +55,7 @@ class Status(Resource, Node):
 
     def get_is_end(self):
         is_end = False
-        if len(self.process_list) > 0 and len(self.process_list) == len(self.now_list):
+        if len(self.process_list) !=0 and len(self.process_list) == len(self.now_list):
             is_end = True
         
         for process in self.now_list:

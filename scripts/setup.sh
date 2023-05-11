@@ -26,13 +26,13 @@ function deploy() {
     #发送webhook
     webhook_all_process_first
     #准备部署环境
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml > /var/log/deploy.log 2>&1
-    if ! [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml > /var/log/deploy/deploy.log 2>&1
+    if ! [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "准备部署环境失败" false 1 "准备部署环境"
       exit 1
     fi
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml >> /var/log/deploy.log 2>&1
-    if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml >> /var/log/deploy/deploy.log 2>&1
+    if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "成功" true 1 "准备部署环境"
     else
       webhook_process "ready_environment" "准备部署环境失败" false 1 "准备部署环境"
@@ -40,8 +40,8 @@ function deploy() {
     fi
     #部署文件系统
     if [ "$deploy_ceph_flag" = "True" ]; then
-      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ceph_ansible_path}/ceph-deploy.yaml >> /var/log/deploy.log 2>&1
-      if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ceph_ansible_path}/ceph-deploy.yaml >> /var/log/deploy/deploy.log 2>&1
+      if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
         webhook_process "deploy_ceph" "成功" true 2 "部署文件系统"
       else
         webhook_process "deploy_ceph" "部署文件系统失败" false 2 "部署文件系统"
@@ -52,8 +52,8 @@ function deploy() {
     fi
 
     #部署虚拟化系统
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy.log 2>&1
-    if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy/deploy.log 2>&1
+    if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "deploy_trochilus" "成功" true 3 "部署虚拟化系统"
     else
       webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 3 "deploy Virtual system"
@@ -65,8 +65,8 @@ function deploy() {
     #发送webhook
     webhook_all_process_retry
     #清除虚拟化系统
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/99-destroy.yaml > /var/log/deploy.log 2>&1
-    if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/99-destroy.yaml > /var/log/deploy/deploy.log 2>&1
+    if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "clear_trochilus" "成功" true 1 "清除虚拟化系统"
     else
       webhook_process "clear_trochilus" "清除虚拟化系统失败" false 1 "清除虚拟化系统"
@@ -74,8 +74,8 @@ function deploy() {
     fi
     #清除文件系统
     if [ "$deploy_ceph_flag" = "True" ]; then
-      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ceph_ansible_path}/ceph-destroy.yaml  >> /var/log/deploy.log 2>&1
-      if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ceph_ansible_path}/ceph-destroy.yaml  >> /var/log/deploy/deploy.log 2>&1
+      if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
         webhook_process "clear_ceph" "成功" true 2 "清除文件系统"
       else
         webhook_process "clear_ceph" "清除文件系统失败" false 2 "清除文件系统"
@@ -85,13 +85,13 @@ function deploy() {
       webhook_process "clear_ceph" "成功" true 2 "清除文件系统"
     fi
     #准备部署环境
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml >> /var/log/deploy.log 2>&1
-    if ! [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/global_vars.yaml ${ansible_path}/94-internal_ip.yaml >> /var/log/deploy/deploy.log 2>&1
+    if ! [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "准备部署环境失败" false 1 "准备部署环境"
       exit 1
     fi
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml >> /var/log/deploy.log 2>&1
-    if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/91-prepare.yaml >> /var/log/deploy/deploy.log 2>&1
+    if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "ready_environment" "成功" true 3 "准备部署环境"
     else
       webhook_process "ready_environment" "准备部署环境失败" false 3 "准备部署环境"
@@ -99,8 +99,8 @@ function deploy() {
     fi
     #部署文件系统
     if [ "$deploy_ceph_flag" = "True" ]; then
-      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ceph_ansible_path}/ceph-deploy.yaml >> /var/log/deploy.log 2>&1
-      if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ceph_ansible_path}/ceph-deploy.yaml >> /var/log/deploy/deploy.log 2>&1
+      if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
         webhook_process "deploy_ceph" "成功" true 4 "部署文件系统"
       else
         webhook_process "deploy_ceph" "部署文件系统失败" false 4 "部署文件系统"
@@ -110,8 +110,8 @@ function deploy() {
       webhook_process "deploy_ceph" "成功" true 4 "部署文件系统"
     fi
     #部署虚拟化系统
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy.log 2>&1
-    if [ "$(grep 'failed=' /var/log/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy/deploy.log 2>&1
+    if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "deploy_trochilus" "成功" true 5 "部署虚拟化系统"
     else
       webhook_process "deploy_trochilus" "部署虚拟化系统失败" false 5 "deploy Virtual system"

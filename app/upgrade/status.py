@@ -7,7 +7,7 @@ from flask_restful import Resource
 
 class UpgradeStatus(Resource, Node):
     def __init__(self):
-        super().__init__()
+        super().__init__() 
         self.process_list = self.get_process_list()
         self.now_list = self.get_now_list()
 
@@ -16,7 +16,6 @@ class UpgradeStatus(Resource, Node):
         return types.DataModel().model(code=0, data=data)
 
     def data_format(self):
-        
         data = {
             "processList": self.process_list,
             "nowList": self.now_list,
@@ -50,7 +49,7 @@ class UpgradeStatus(Resource, Node):
 
     def get_is_end(self):
         is_end = False
-        if len(self.process_list) > 0 and len(self.process_list) == len(self.now_list):
+        if len(self.process_list) !=0 and len(self.process_list) == len(self.now_list):
             is_end = True
         
         for process in self.now_list:
