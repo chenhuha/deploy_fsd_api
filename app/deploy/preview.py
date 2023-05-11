@@ -1,4 +1,4 @@
-import yaml
+import yaml,logging
 
 from flask import current_app
 from flask_restful import reqparse, Resource
@@ -7,6 +7,9 @@ from jinja2 import Template
 
 
 class DeployPreview(object):
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
+
     def get_preview_from_request(self):
         parser = reqparse.RequestParser()
         parser.add_argument('common', required=True, location='json',
