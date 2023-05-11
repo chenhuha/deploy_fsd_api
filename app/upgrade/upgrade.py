@@ -1,4 +1,3 @@
-import re
 import subprocess
 from flask_restful import reqparse, Resource
 from common import constants, utils, types
@@ -45,52 +44,47 @@ class Upgrade(Resource):
             current_app.config['UPGRADE_SAVE_PATH'], file_name)
         new_version = utils.get_new_verison(file_name)
 
-        try:
-            cmd = constants.COMMAND_TAR_UNZIP % (
-                file_path, current_app.config['UPGRADE_SAVE_PATH'])
-            _, result, _ = utils.execute(cmd)
-            self._logger.info(
-                f"Execute command to decompression zip package '{cmd}', result:{result}")
+        cmd = constants.COMMAND_TAR_UNZIP % (
+            file_path, current_app.config['UPGRADE_SAVE_PATH'])
+        code, result, err = utils.execute(cmd)
+        if code != 0:
+            self._logger.error(f'Decompression file {file_path} Field, Because: {err}')
             data = self._data_build(
-                'unzip_upgrade_package', '', True, 0, '解压升级包')
+            'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
             self._write_upgrade_file([data], True)
-
             record = types.DataModel().history_upgarde_model(
-                new_version, self.version, '', '-')
-            self._write_history_upgrade_file(record)
-        except Exception as e:
-            self._logger.error(
-                f'Decompression file {file_path} Field, Because: {e}')
-            data = self._data_build(
-                'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
-            self._write_upgrade_file([data], True)
-
-            record = types.DataModel().history_upgarde_model(
-                new_version, self.version, False, 'Failed to decompress the upgrade package')
+            new_version, self.version, False, 'Failed to decompress the upgrade package')
             self._write_history_upgrade_file(record)
             raise
+        self._logger.info(
+            f"Execute command to decompression zip package '{cmd}', result:{result}")
+        
+        data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
+        self._write_upgrade_file([data], True)
+        record = types.DataModel().history_upgarde_model(
+            new_version, self.version, '', '-')
+        self._write_history_upgrade_file(record)
 
     def mysql_dump(self):
-        try:
-            with open(self.global_path, 'r') as f:
-                config_text = f.read()
-            configs = yaml.load(config_text, Loader=yaml.FullLoader)
-            mariadb_root_password = configs['mariadb_root_password']
-            cmd = constants.COMMAND_MYSQL_DUMP % ('root', mariadb_root_password, '127.0.0.1', os.path.join(
-                current_app.config['UPGRADE_SAVE_PATH'], 'upgrade_bak_{}_{}.sql'.format(self.version, time.strftime('%Y-%m-%d', time.localtime(time.time())))))
-            self._logger.info(f"Execute command '{cmd}'")
-            _, result, _ = utils.execute(cmd)
-            data = self._data_build('dump_mysql_data', '', True, 1, '备份数据库')
-            self._write_upgrade_file(data)
-        except Exception as e:
+        with open(self.global_path, 'r') as f:
+            config_text = f.read()
+        configs = yaml.load(config_text, Loader=yaml.FullLoader)
+        mariadb_root_password = configs['mariadb_root_password']
+        cmd = constants.COMMAND_MYSQL_DUMP % ('root', mariadb_root_password, '127.0.0.1', os.path.join(
+            current_app.config['UPGRADE_SAVE_PATH'], 'upgrade_bak_{}_{}.sql'.format(self.version, time.strftime('%Y-%m-%d', time.localtime(time.time())))))
+        self._logger.info(f"Execute command '{cmd}'")
+        code, result, err = utils.execute(cmd)
+        if code != 0:
             data = self._data_build(
-                'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
+            'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
             self._logger.error(
                 f"Execute command to dump mysql is faild,Because: {e}")
             self._write_upgrade_file(data)
             self._update_history_upgrade_file(
                 result=False, message="Database backup failure")
             raise
+        data = self._data_build('dump_mysql_data', '', True, 1, '备份数据库')
+        self._write_upgrade_file(data)
 
     def upgrade_script(self, filename):
         upgrade_file = os.path.splitext(os.path.splitext(filename)[0])[0]
@@ -101,6 +95,7 @@ class Upgrade(Resource):
 
         try:
             results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            print(results)
             thread = Thread(target=self._shell_return_listen, args=(
                 current_app._get_current_object(), results))
             thread.start()
