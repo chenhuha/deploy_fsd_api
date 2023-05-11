@@ -74,3 +74,18 @@ def get_version():
         version = f.read()
     version = version.strip()
     return version
+
+# COMM-unknown_value_v2.0.3.tar.gz
+def get_new_verison(filename):
+    new_version=''
+    pattern = r'^(\w+)-.*_(v\d+\.\d+\.\d+)'
+
+    match = re.match(pattern, filename)
+    if match:
+        series = match.group(1)
+        version = match.group(2)
+        new_version = series + '-' + version
+
+    return new_version
+
+
