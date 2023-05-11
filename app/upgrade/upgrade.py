@@ -24,6 +24,9 @@ class Upgrade(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('filename', required=True, type=str, location='json',
                             help='The filename field does not exist')
+        data = self._data_build('unzip_upgrade_package', '', '-', 0, '解压升级包')
+        self._write_upgrade_file([data], True)
+
         return parser.parse_args()
 
     def post(self):
@@ -43,7 +46,6 @@ class Upgrade(Resource):
         file_path = os.path.join(
             current_app.config['UPGRADE_SAVE_PATH'], file_name)
         new_version = utils.get_new_verison(file_name)
-
         cmd = constants.COMMAND_TAR_UNZIP % (
             file_path, current_app.config['UPGRADE_SAVE_PATH'])
         code, result, err = utils.execute(cmd)
