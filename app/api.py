@@ -12,6 +12,7 @@ from deploy.node_secret import NodeSecret
 from deploy.preview import Preview
 from deploy.recommend_config import ReckRecommendConfigCommon, ShowRecommendConfig
 from deploy.status import Status
+from upgrade.version import CurrentVersion
 from upgrade.upload import Upload
 from upgrade.upgrade import Upgrade
 from upgrade.upgrade_history import UpgradeHistory
@@ -67,6 +68,7 @@ api.add_resource(DeployExport, '/api/deploy/export')
 api.add_resource(DeployLog, '/api/deploy/download')
 
 # Upload api register
+api.add_resource(CurrentVersion, '/api/upgrade/current/version')
 api.add_resource(Upload, '/api/upgrade/upload')
 api.add_resource(Upgrade, '/api/upgrade')
 api.add_resource(UpgradeHistory, '/api/upgrade/history')
