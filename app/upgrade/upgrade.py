@@ -52,7 +52,7 @@ class Upgrade(Resource):
             self._logger.info(
                 f"Execute command to decompression zip package '{cmd}', result:{result}")
             data = self._data_build(
-                True, '0', "unzip_upgrade_package", "解压升级包")
+                'unzip_upgrade_package', '', True, 0, '解压升级包')
             self._write_upgrade_file([data], True)
 
             record = types.DataModel().history_upgarde_model(
@@ -62,11 +62,11 @@ class Upgrade(Resource):
             self._logger.error(
                 f'Decompression file {file_path} Field, Because: {e}')
             data = self._data_build(
-                False, '0', "unzip_upgrade_package", "解压升级包")
+                'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
             self._write_upgrade_file([data], True)
 
             record = types.DataModel().history_upgarde_model(
-                new_version, self.version, False, '解压升级包失败')
+                new_version, self.version, False, 'Failed to decompress the upgrade package')
             self._write_history_upgrade_file(record)
             raise
 
@@ -80,14 +80,16 @@ class Upgrade(Resource):
                 current_app.config['UPGRADE_SAVE_PATH'], 'upgrade_bak_{}_{}.sql'.format(self.version, time.strftime('%Y-%m-%d', time.localtime(time.time())))))
             self._logger.info(f"Execute command '{cmd}'")
             _, result, _ = utils.execute(cmd)
-            data = self._data_build(True, '1', 'dump_mysql_data', '备份数据库')
+            data = self._data_build('dump_mysql_data', '', True, 1, '备份数据库')
             self._write_upgrade_file(data)
         except Exception as e:
-            data = self._data_build(False, '1', 'dump_mysql_data', '备份数据库')
+            data = self._data_build(
+                'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
             self._logger.error(
                 f"Execute command to dump mysql is faild,Because: {e}")
             self._write_upgrade_file(data)
-            self._update_history_upgrade_file(result=False, message="备份数据库失败")
+            self._update_history_upgrade_file(
+                result=False, message="Database backup failure")
             raise
 
     def upgrade_script(self, filename):
@@ -106,6 +108,8 @@ class Upgrade(Resource):
         except Exception as e:
             self._logger.error(
                 f"Execute command to Upgrade is faild ,Because: {e}")
+            self._update_history_upgrade_file(
+                result=False, message="Description Failed to execute the upgrade program")
 
     def _shell_return_listen(self, app, subprocess_1):
         with app.app_context():
@@ -162,11 +166,11 @@ class Upgrade(Resource):
             self._logger.error(
                 f'Update file /tmp/upgrade_now_status is Feild, because: {e}')
 
-    def _data_build(self, ok, sort, en, zh):
+    def _data_build(self, en, message, result, sort, zh):
         return {
             "en": en,
-            "message": "成功" if ok else "失败",
-            "result": ok,
+            "message": message,
+            "result": result,
             "sort": sort,
-            "zh": f"{zh}成功" if ok else f"{zh}失败"
+            "zh": zh
         }
