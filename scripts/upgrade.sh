@@ -57,7 +57,7 @@ function deploy_front_upgrade(){
 function deploy_upgrade_program() { 
   # 服务升级
   ansible-playbook -i ${deploy_etc_example_path}/hosts -e @${deploy_etc_example_path}/ceph-globals.yaml -e @${deploy_etc_example_path}/global_vars.yaml -e @${upgrade_etc_example_path}/upgrade-globals.yaml ${upgrade_ansible_path}/95-upgrade.yaml> /var/log/deploy/upgrade.log 2>&1
-  if [ "$(grep 'failed=' /var/log/upgrade.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
+  if [ "$(grep 'failed=' /var/log/deploy/upgrade.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
     process "deploy_upgrade_program" "" true 2 "deploy_upgrade_program"
   else
     process "deploy_upgrade_program" "执行升级程序失败" false 2 "deploy_upgrade_program"
