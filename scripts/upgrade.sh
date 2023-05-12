@@ -81,23 +81,20 @@ function check_service_status() {
 
 # 上报所有流程
 function all_process() {
-  json="{\"en\":\"unzip_upgrade_package\",\"message\":\"\",\"result\":true,\"sort\":0,\"zh\":\"解压升级包\"} 
-        {\"en\":\"backup_data\",\"message\":\"\",\"result\":true,\"sort\":1,\"zh\":\"备份数据库\"}
-        {\"en\":\"deploy_upgrade_program\",\"message\":\"\",\"result\":true,\"sort\":2,\"zh\":\"执行升级程序\"}
-        {\"en\":\"check_service_status\",\"message\":\"\",\"result\":true,\"sort\":3,\"zh\":\"检测环境状态\"}"
-  json_list=$(echo "${json}" | jq -s '.')
-  echo $json_list > /tmp/upgrade_process_status
-  echo ""
+  sqlite3 /root/deploy/kly-deploy.db <<EOF
+    DELETE FROM upgrade_process_status;
+    DELETE FROM upgrade_now_status;
+    INSERT INTO upgrade_process_status(en, message, result, sort, zh) VALUES ("unzip_upgrade_package", "", "true", 0, "解压升级包");
+    INSERT INTO upgrade_process_status(en, message, result, sort, zh) VALUES ("backup_data", "", "true", 1, "备份数据库");
+    INSERT INTO upgrade_process_status(en, message, result, sort, zh) VALUES ("deploy_upgrade_program", "", "true", 2, "执行升级程序");
+    INSERT INTO upgrade_process_status(en, message, result, sort, zh) VALUES ("check_service_status", "", "true", 3, "检测环境状态");
+EOF
 }
 
 # 上报中间流程
 function process() {
-  json="{\"en\":\"$1\",\"message\":\"$2\",\"result\":$3,\"sort\":$4,\"zh\":\"$5\"}"
-  json_array+=("$json")
-  json_list=$(echo "${json_array[@]}" | jq -s '.')
-  echo "$json_list" > /dev/null
-  echo "$json_list" > /tmp/upgrade_now_status
-  echo ""
+  echo "('$1', '$2', '$3', $4, '$5')"
+  sqlite3 /root/deploy/kly-deploy.db "INSERT INTO upgrade_now_status(en, message, result, sort, zh) VALUES ('$1', '$2', '$3', $4, '$5');"
 }
 
 check_param

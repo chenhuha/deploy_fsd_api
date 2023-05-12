@@ -22,6 +22,9 @@ from extension.load import ExtendNodeLoad
 from extension.net_chek import ExtendNetCheck,ExtendNetCheckCommon
 from extension.recommend_config import ExtendReckRecommendConfigCommon,ExtendShowRecommendConfig
 from extension.preview import ExtendPreview
+from extension.extension import Extension
+from extension.status import ExtensionStatus
+
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource
@@ -76,7 +79,6 @@ api.add_resource(UpgradeHistory, '/api/upgrade/history')
 api.add_resource(UpgradeStatus, '/api/upgrade/status')
 
 # Extension api register
-
 api.add_resource(ExtendNodeLoad, '/api/extend/node/load')
 api.add_resource(ExtendNetCheck, '/api/extend/node/netCheck')
 api.add_resource(ExtendReckRecommendConfigCommon, 
@@ -85,6 +87,9 @@ api.add_resource(ExtendShowRecommendConfig,
                  '/api/extend/node/showRecommendConfig')
 api.add_resource(ExtendNetCheckCommon, '/api/extend/node/netCheck/common')
 api.add_resource(ExtendPreview, '/api/extend/preview')
+api.add_resource(Extension, '/api/extend')
+api.add_resource(ExtensionStatus, '/api/extend/status')
+
 
 if __name__ == '__main__':
     port = app.config['PORT']

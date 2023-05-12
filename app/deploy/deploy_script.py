@@ -10,28 +10,30 @@ from deploy.preview import Preview
 from flask import current_app
 from uuid import uuid1
 from threading import Thread
-from deploy.status import Status
 from deploy.node_base import Node
-
+from models.deploy_history import DeployHistoryModel
+from models.load_info import LoadInfoModel
+from models.upgrade_history import UpgradeHistoryModel
+from models.deploy_status import DeployStatusModel
 
 class DeployScript(Preview, Node):
     def __init__(self):
         super().__init__()
-        self.history_path = os.path.join(
-            current_app.config['DEPLOY_HOME'], 'historyDeploy.yml')
         self.global_vars_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml')
         self.ceph_globals_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'ceph-globals.yaml')
         self.hosts_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'hosts')
-        self.history_upgrade_path = os.path.join(
-            current_app.config['DEPLOY_HOME'], 'historyUpgrade.json')
+        self.db_path = current_app.config['DB_NAME']
         self.deploy_info_path = os.path.join(
             current_app.config['DEPLOY_HOME'], 'deploy_node_info.xlsx')
         self.bak_path = os.path.join(current_app.config['ETC_EXAMPLE_PATH'], time.strftime(
             '%Y-%m-%d', time.localtime(time.time())) + '_example_bak/')
-    
+
+        self.deploy_history_model = DeployHistoryModel()
+        self.deploy_status_model = DeployStatusModel()
+
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
@@ -46,19 +48,21 @@ class DeployScript(Preview, Node):
         return types.DataModel().model(code=0, data="")
 
     def control_deploy(self, previews):
-        if not os.path.exists(self.history_path):
-            deploy_type = "first"
-        else:
+        if self.deploy_history_model.get_deploy_history():
             deploy_type = "retry"
+        else:
+            deploy_type = "first"
         ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
         deploy_key = previews['key']
         deploy_uuid = str(uuid1())
         results = types.DataModel().history_deploy_model(
             paramsJson=json.dumps(previews),
             uuid=deploy_uuid,
-            startTime=int(time.time() * 1000)
+            startTime=int(time.time() * 1000),
+            endtime=int(time.time() * 1000)
         )
         self._write_history_file(results)
+        self._create_status_table()
         cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/setup.sh',
                deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
         self._logger.info('deploy command: %s', cmd)
@@ -79,55 +83,27 @@ class DeployScript(Preview, Node):
     def _shell_return_listen(self, app, subprocess_1, previews, deploy_uuid, start_time):
         with app.app_context():
             subprocess_1.wait()
-            status_results = Status.get_now_list(self)
-            end_results = status_results[-1]
+            status = self.deploy_status_model.get_deploy_last_status()
+            if status:
+                deploy_message = status[0]
+                deploy_result = status[1]
+            else:
+                deploy_message = 'deploy faild.'
+                deploy_result = 'false'
             results = types.DataModel().history_deploy_model(
                 log=str(subprocess_1.stdout.read(), encoding='utf-8'),
                 paramsJson=json.dumps(previews),
                 uuid=deploy_uuid,
                 startTime=start_time,
-                message=end_results['message'],
-                result=end_results['result']
+                endtime=int(time.time() * 1000),
+                message=deploy_message,
+                result=deploy_result
             )
             self._write_history_file(results)
-            self._write_node_info_csv(previews['nodes'])
-            version = self.version()
-            self._write_upgrade_file(version)
-            self.scp_deploy(previews['nodes'])
-
-    def _write_history_file(self, result):
-        results_yaml = yaml.dump(result, sort_keys=False, allow_unicode=True)
-        try:
-            with open(self.history_path, 'w', encoding='UTF-8') as f:
-                f.write(results_yaml)
-        except Exception as e:
-            self._logger.error(
-                f"Faild write {self.history_path} ,Because: {e}")
-
-    def _write_node_info_csv(self, nodes):
-        book = load_workbook(self.deploy_info_path)
-        template_sheet = book['mould']
-        for node in nodes:
-            target_sheet = book.copy_worksheet(template_sheet)
-            target_sheet.title = node['nodeName']
-            target_sheet.cell(row=3, column=1, value=node['nodeName'])
-            target_sheet.cell(row=3, column=2, value=node['nodeIP'])
-            target_sheet.cell(
-                row=3, column=3, value=','.join(node['nodeType']))
-            target_sheet.cell(row=3, column=4, value='0.0.0.0')
-            net_info = self._net_info(node['networkCards'])
-            self._write_info_csv(net_info, target_sheet, 3, 6)
-            hdd_info, ssd_info = self._storages_info(node['storages'])
-            self._write_info_csv(hdd_info, target_sheet, 3, 16)
-            self._write_info_csv(ssd_info, target_sheet, 3, 22)
-
-        book.save(self.deploy_info_path)
-        book.close()
-
-    def _write_info_csv(self, infos, sheet, start_row, start_col):
-        for row, info in enumerate(infos, start=start_row):
-            for col, value in enumerate(info, start=start_col):
-                sheet.cell(row=row, column=col, value=value)
+            if deploy_result.lower() == 'true':
+                self._write_node_info_csv(previews['nodes'])
+                self._write_upgrade_file()
+                self.scp_deploy(previews['nodes'])
 
     def _net_info(self, cards):
         cards_list = []
@@ -198,18 +174,16 @@ class DeployScript(Preview, Node):
 
     def _load_storage(self):
         try:
-            with (open(current_app.config['DEPLOY_HOME'] + '/load.json', 'r')) as f:
-                data = f.read()
-            return json.loads(data)
+            model = LoadInfoModel()
+            info = model.get_load_info()
+            return json.loads(info)
         except Exception as e:
-            self._logger.error(
-                f"Faild open {current_app.config['DEPLOY_HOME'] + '/load.json'} and to json ,Because: {e}")
             return []
 
     def scp_deploy(self, nodes):
         cmds = []
         for node in nodes:
-            for file in [self.history_path, self.global_vars_path, self.ceph_globals_path, self.hosts_path, self.history_upgrade_path, self.deploy_info_path]:
+            for file in [self.db_path, self.global_vars_path, self.ceph_globals_path, self.hosts_path, self.deploy_info_path]:
                 cmd = constants.COMMAND_SCP_FILE % (
                     current_app.config['NODE_PASS'], file, current_app.config['NODE_USER'], node['nodeIP'], file)
                 cmds.append(cmd)
@@ -227,7 +201,7 @@ class DeployScript(Preview, Node):
                 version = f.read()
         else:
             with open(os.path.join(current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml'), 'r') as f:
-                global_var = yaml.load(f.read(),Loader=yaml.FullLoader)
+                global_var = yaml.load(f.read(), Loader=yaml.FullLoader)
             if global_var['deploy_edu']:
                 version = f"EDU-v{global_var['fsd_default_tag']}"
             else:
@@ -237,21 +211,42 @@ class DeployScript(Preview, Node):
 
         return version.strip()
 
-    def _write_upgrade_file(self, version):
-        if os.path.exists(self.history_upgrade_path):
-            pass
-        else:
-            try:
-                with open(self.history_upgrade_path, 'w') as f:
-                    f.write(json.dumps(
-                        [{
-                            "version": "-",
-                            "new_version": version,
-                            "result": True,
-                            "message": "-",
-                            "endtime": int(time.time() * 1000)
-                        }]
-                    ))
-            except Exception as e:
-                self._logger.error(
-                    f"open or create {self.history_upgrade_path}  faild ,Because: {e}")
+    def _write_node_info_csv(self, nodes):
+        book = load_workbook(self.deploy_info_path)
+        template_sheet = book['mould']
+        for node in nodes:
+            target_sheet = book.copy_worksheet(template_sheet)
+            target_sheet.title = node['nodeName']
+            target_sheet.cell(row=3, column=1, value=node['nodeName'])
+            target_sheet.cell(row=3, column=2, value=node['nodeIP'])
+            target_sheet.cell(
+                row=3, column=3, value=','.join(node['nodeType']))
+            target_sheet.cell(row=3, column=4, value='0.0.0.0')
+            net_info = self._net_info(node['networkCards'])
+            self._write_info_csv(net_info, target_sheet, 3, 6)
+            hdd_info, ssd_info = self._storages_info(node['storages'])
+            self._write_info_csv(hdd_info, target_sheet, 3, 16)
+            self._write_info_csv(ssd_info, target_sheet, 3, 22)
+
+        book.save(self.deploy_info_path)
+        book.close()
+
+    def _write_info_csv(self, infos, sheet, start_row, start_col):
+        for row, info in enumerate(infos, start=start_row):
+            for col, value in enumerate(info, start=start_col):
+                sheet.cell(row=row, column=col, value=value)
+    
+    def _write_history_file(self, result):
+        self.deploy_history_model.create_deploy_history_table()
+        self.deploy_history_model.add_deploy_history(result['paramsJson'], result['log'], result['message'],
+                                 result['uuid'], result['result'], result['startTime'],
+                                 result['endtime'], result['key'])
+                
+    def _write_upgrade_file(self):
+        version = self.version()
+        model = UpgradeHistoryModel()
+        model.create_upgrade_history_table()
+        model.add_upgrade_history('-', version, "true", '-', int(time.time() * 1000))
+
+    def _create_status_table(self):
+        self.deploy_status_model.create_deploy_status_table()

@@ -3,9 +3,14 @@ import yaml, os, json
 from flask import current_app
 from common import types
 
+from models.deploy_history import DeployHistoryModel
 from deploy.preview import Preview
 
 class ExtendPreview(Preview):
+    def __init__(self):
+        super().__init__()
+        self.deploy_history_model = DeployHistoryModel()
+        
     def post(self):
         preview_info = self.get_preview_from_request()
         history_deploy_preview = self.get_deploy_preview_data()
@@ -24,9 +29,8 @@ class ExtendPreview(Preview):
 
     def get_deploy_preview_data(self):
         try:
-            with open(os.path.join(current_app.config['DEPLOY_HOME'], 'historyDeploy.yml'), 'r') as f:
-                datas = yaml.load(f ,Loader=yaml.FullLoader)
-            return json.loads(datas['paramsJson'])
+            history_data = self.deploy_history_model.get_deploy_history()
+            return json.loads(history_data[1])
         except Exception as e:
             self._logger.error(f"Get Deploy History file or Get paramsJson in file is filed, Because: {e}")
             raise

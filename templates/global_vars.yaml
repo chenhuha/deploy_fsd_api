@@ -224,7 +224,7 @@ fsd_external_main_port: 9010
 fsd_internal_main_port: 19010
 fsd_ssd_port: 22222
 fsd_webhook_token: abc123
-fsd_default_tag: dev
+fsd_default_tag: 2.0.2
 fsd_console_tag: latest
 fsd_deploy_mode: all
 fsd_deploy_node_type: '{% if groups["fsd"] | length > 1 %}cluster{% else %}single{% endif %}'

@@ -1,9 +1,9 @@
-import json,os
+import json
+from models.load_info import LoadInfoModel
 
 from deploy.node_load import NodeLoad
 from common import types, utils
 from flask import current_app
-from flask_restful import Resource
 
 
 class ExtendNodeLoad(NodeLoad):
@@ -23,10 +23,10 @@ class ExtendNodeLoad(NodeLoad):
         return types.DataModel().model(code=0, data=data)
 
     def get_deploy_node_load_info(self):
-        try:
-            with open(os.path.join(current_app.config['DEPLOY_HOME'], 'load.json'), 'r') as f:
-                load_json = json.load(f)
-            return load_json
-        except Exception as e:
-            self._logger.error(f"Failed to load json file: {e}")
-            raise 
+        model = LoadInfoModel()
+        info = model.get_load_info()
+        if info:
+            data  = json.loads(info[0])
+        else:
+            data = []
+        return data
