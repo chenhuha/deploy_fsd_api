@@ -1,8 +1,11 @@
 import json,yaml
+import logging
 import os
 import shutil
-from deploy.net_check import NetCheck,NetCheckCommon
+
 from common import types
+from deploy.net_check import NetCheck,NetCheckCommon
+from models.deploy_history import DeployHistoryModel
 from flask import current_app
 
 
@@ -10,8 +13,10 @@ from flask import current_app
 class ExtendNetCheck(NetCheck):
     def __init__(self):
         super().__init__()
+        self._logger = logging.getLogger(__name__)
         self.nodes = self.get_nodes_from_request() + self.get_node_load_card_info()
         self.node_list = self.get_info_with_from(self.nodes)
+        self.deploy_history_model = DeployHistoryModel()
 
     def post(self):
         data = self.multiple_nodes_data()
@@ -39,9 +44,9 @@ class ExtendNetCheck(NetCheck):
                 "nodeIP": "",
                 "nodeName": ""
                 }
-            with open(os.path.join(current_app.config['DEPLOY_HOME'], 'historyDeploy.yml'), 'r') as f:
-                datas = yaml.load(f ,Loader=yaml.FullLoader)
-            datas_json = json.loads(datas['paramsJson'])
+            
+            history_data = self.deploy_history_model.get_deploy_history()
+            datas_json = json.loads(history_data[1])
             for node in datas_json['nodes']:
                 card_data['cards'] = node['networkCards']
                 card_data['nodeIP'] = node['nodeIP']
@@ -55,6 +60,7 @@ class ExtendNetCheck(NetCheck):
 
 class ExtendNetCheckCommon(ExtendNetCheck,NetCheckCommon):
     def __init__(self):
+        self.deploy_history_model = DeployHistoryModel()
         nodes = self.get_nodes_from_request()
         cards = self.get_cards_from_request()
         extend_nodes = self.get_deploy_cards()
@@ -70,9 +76,8 @@ class ExtendNetCheckCommon(ExtendNetCheck,NetCheckCommon):
                 "nodeIP": "",
                 "nodeName": ""
             }
-            with open(os.path.join(current_app.config['DEPLOY_HOME'], 'historyDeploy.yml'), 'r') as f:
-                datas = yaml.load(f ,Loader=yaml.FullLoader)
-            datas_json = json.loads(datas['paramsJson'])
+            history_data = self.deploy_history_model.get_deploy_history()
+            datas_json = json.loads(history_data[1])
             for node in datas_json['nodes']:
                 node_card_data['cards'] = node['networkCards']
                 node_card_data['nodeIP'] = node['nodeIP']

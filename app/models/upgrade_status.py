@@ -87,7 +87,7 @@ class UpgradeStatusModel:
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            c.execute("SELECT message, result FROM upgrade_last_status ORDER BY id DESC LIMIT 1;")
+            c.execute("SELECT message, result FROM upgrade_now_status ORDER BY id DESC LIMIT 1;")
             result = c.fetchone()
             c.close()
             return result

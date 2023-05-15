@@ -2,7 +2,6 @@ import json
 import threading
 
 from models.load_info import LoadInfoModel
-
 from common import types, utils
 from deploy.node_base import Node
 from flask import current_app

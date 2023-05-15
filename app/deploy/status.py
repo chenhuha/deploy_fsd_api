@@ -1,5 +1,3 @@
-import json
-
 from common import types
 from deploy.node_base import Node
 from models.deploy_status import DeployStatusModel

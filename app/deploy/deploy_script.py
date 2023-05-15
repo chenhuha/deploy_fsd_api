@@ -16,6 +16,7 @@ from models.load_info import LoadInfoModel
 from models.upgrade_history import UpgradeHistoryModel
 from models.deploy_status import DeployStatusModel
 
+
 class DeployScript(Preview, Node):
     def __init__(self):
         super().__init__()
@@ -235,18 +236,19 @@ class DeployScript(Preview, Node):
         for row, info in enumerate(infos, start=start_row):
             for col, value in enumerate(info, start=start_col):
                 sheet.cell(row=row, column=col, value=value)
-    
+
     def _write_history_file(self, result):
         self.deploy_history_model.create_deploy_history_table()
         self.deploy_history_model.add_deploy_history(result['paramsJson'], result['log'], result['message'],
-                                 result['uuid'], result['result'], result['startTime'],
-                                 result['endtime'], result['key'])
-                
+                                                     result['uuid'], result['result'], result['startTime'],
+                                                     result['endtime'], result['key'])
+
     def _write_upgrade_file(self):
         version = self.version()
         model = UpgradeHistoryModel()
         model.create_upgrade_history_table()
-        model.add_upgrade_history('-', version, "true", '-', int(time.time() * 1000))
+        model.add_upgrade_history(
+            '-', version, "true", '-', int(time.time() * 1000))
 
     def _create_status_table(self):
         self.deploy_status_model.create_deploy_status_table()
