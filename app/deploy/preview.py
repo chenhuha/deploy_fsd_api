@@ -1,4 +1,4 @@
-import yaml,logging
+import yaml, logging
 
 from flask import current_app
 from flask_restful import reqparse, Resource

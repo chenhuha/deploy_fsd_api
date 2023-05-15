@@ -1,9 +1,8 @@
 import json
-from models.load_info import LoadInfoModel
 
+from models.load_info import LoadInfoModel
 from deploy.node_load import NodeLoad
-from common import types, utils
-from flask import current_app
+from common import types
 
 
 class ExtendNodeLoad(NodeLoad):

@@ -1,6 +1,7 @@
+import os
+
 from common import constants, types, utils
 from deploy.node_base import Node
-import os
 from flask import current_app
 from flask_restful import Resource
 

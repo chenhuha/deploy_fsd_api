@@ -7,7 +7,6 @@ from models.load_info import LoadInfoModel
 
 from common import types
 from deploy.node_base import Node
-from flask import current_app
 from flask_restful import reqparse, Resource
 
 

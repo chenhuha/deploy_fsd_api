@@ -1,4 +1,4 @@
-PORT = 1236
+PORT = 2236
 DEBUG = True
 
 # log 存放的目录
