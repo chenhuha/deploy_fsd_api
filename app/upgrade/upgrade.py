@@ -1,5 +1,7 @@
 import subprocess
 from flask_restful import reqparse, Resource
+from models.upgrade_status import UpgradeStatusModel
+from models.upgrade_history import UpgradeHistoryModel
 from common import constants, utils, types
 import json
 import logging
@@ -16,24 +18,29 @@ class Upgrade(Resource):
         self._logger = logging.getLogger(__name__)
         self.global_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml')
-        self.history_upgrade_path = os.path.join(
-            current_app.config['DEPLOY_HOME'], 'historyUpgrade.json')
         self.version = utils.get_version()
+
+        self.upgrade_history_model = UpgradeHistoryModel()
+        self.upgrade_status_model = UpgradeStatusModel()
 
     def _get_upgrade_from_request(self):
         parser = reqparse.RequestParser()
         parser.add_argument('filename', required=True, type=str, location='json',
                             help='The filename field does not exist')
-        data = self._data_build('unzip_upgrade_package', '', '-', 0, '解压升级包')
-        self._write_upgrade_file([data], True)
 
         return parser.parse_args()
 
     def post(self):
         file_name = self._get_upgrade_from_request()['filename']
+        
+        self.upgrade_status_model.create_upgrade_status_table()
+        data = self._data_build('unzip_upgrade_package', '', '-', 0, '解压升级包')
+        self._write_upgrade_file(data)
+
         thread = Thread(target=self.start_upgrade, args=(
             current_app._get_current_object(), file_name))
         thread.start()
+
         return types.DataModel().model(code=0, data="")
 
     def start_upgrade(self, app, file_name):
@@ -50,19 +57,20 @@ class Upgrade(Resource):
             file_path, current_app.config['UPGRADE_SAVE_PATH'])
         code, result, err = utils.execute(cmd)
         if code != 0:
-            self._logger.error(f'Decompression file {file_path} Field, Because: {err}')
+            self._logger.error(
+                f'Decompression file {file_path} Field, Because: {err}')
             data = self._data_build(
-            'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
-            self._write_upgrade_file([data], True)
+                'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
+            self._write_upgrade_file(data)
             record = types.DataModel().history_upgarde_model(
-            new_version, self.version, False, 'Failed to decompress the upgrade package')
+                new_version, self.version, False, 'Failed to decompress the upgrade package')
             self._write_history_upgrade_file(record)
             raise
         self._logger.info(
             f"Execute command to decompression zip package '{cmd}', result:{result}")
-        
+
         data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
-        self._write_upgrade_file([data], True)
+        self._write_upgrade_file(data)
         record = types.DataModel().history_upgarde_model(
             new_version, self.version, '', '-')
         self._write_history_upgrade_file(record)
@@ -78,12 +86,12 @@ class Upgrade(Resource):
         code, result, err = utils.execute(cmd)
         if code != 0:
             data = self._data_build(
-            'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
+                'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
             self._logger.error(
                 f"Execute command to dump mysql is faild,Because: {e}")
             self._write_upgrade_file(data)
             self._update_history_upgrade_file(
-                result=False, message="Database backup failure")
+                result="false", message="Database backup failure")
             raise
         data = self._data_build('dump_mysql_data', '', True, 1, '备份数据库')
         self._write_upgrade_file(data)
@@ -97,7 +105,6 @@ class Upgrade(Resource):
 
         try:
             results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-            print(results)
             thread = Thread(target=self._shell_return_listen, args=(
                 current_app._get_current_object(), results))
             thread.start()
@@ -106,62 +113,43 @@ class Upgrade(Resource):
             self._logger.error(
                 f"Execute command to Upgrade is faild ,Because: {e}")
             self._update_history_upgrade_file(
-                result=False, message="Description Failed to execute the upgrade program")
+                result="false", message="Description Failed to execute the upgrade program")
 
     def _shell_return_listen(self, app, subprocess_1):
         with app.app_context():
             subprocess_1.wait()
-
-            status_results = Status.get_now_list(self)
-            end_results = status_results[-1]
-            self._update_history_upgrade_file(
-                message=end_results['message'], result=end_results['result'])
+            status = self.upgrade_status_model.get_upgrade_last_status()
+            if status:
+                upgrade_message = status[0]
+                upgrade_result = status[1]
+            else:
+                upgrade_message = '升级失败！'
+                upgrade_result = 'false'
+            self._update_history_upgrade_file(upgrade_message, upgrade_result)
 
     def _write_history_upgrade_file(self, record):
+        self.upgrade_history_model.add_upgrade_history(
+            record['version'], 
+            record['new_version'], 
+            record['result'], 
+            record['message'], 
+            record['endtime'])
+
+    def _update_history_upgrade_file(self, message, result):
         try:
-            with open(self.history_upgrade_path, 'r') as f:
-                data = json.load(f)
-            data.append(record)
-
-            with open(self.history_upgrade_path, 'w', encoding='UTF-8') as f:
-                f.write(json.dumps(data))
-        except Exception as e:
-            self._logger.error(
-                f"Faild write {self.history_upgrade_path} ,Because: {e}")
-
-    def _update_history_upgrade_file(self, result, message):
-        try:
-            with open(self.history_upgrade_path, 'r') as f:
-                data = json.load(f)
-            data[-1]['result'] = result
-            data[-1]['message'] = message
-
-            with open(self.history_upgrade_path, 'w', encoding='UTF-8') as f:
-                f.write(json.dumps(data))
-
+            self.upgrade_history_model.update_upgrade_history(
+                result, message, int(time.time() * 1000))
             if result:
+                version = self.upgrade_history_model.get_upgrade_version()
                 with open('/etc/klcloud-release', 'w') as f:
-                    f.write(data[-1]['new_version'])
+                    f.write(version[0])
         except Exception as e:
             self._logger.error(
-                f"Faild update {self.history_upgrade_path} ,Because: {e}")
+                f"Faild update /etc/klcloud-release ,Because: {e}")
 
-    def _write_upgrade_file(self, data, first=False):
-        try:
-            if first:
-                with open('/tmp/upgrade_now_status', 'w') as f:
-                    f.write(json.dumps(data))
-                return
-            else:
-                with open('/tmp/upgrade_now_status', 'r') as f:
-                    old_data = f.read()
-                new_data = json.loads(old_data)
-                new_data.append(data)
-                with open('/tmp/upgrade_now_status', 'w') as f:
-                    f.write(json.dumps(new_data))
-        except Exception as e:
-            self._logger.error(
-                f'Update file /tmp/upgrade_now_status is Feild, because: {e}')
+    def _write_upgrade_file(self, data):
+        self.upgrade_status_model.add_upgrade_now_status(
+            data['en'], data['message'], data['result'], data['sort'], data['zh'])
 
     def _data_build(self, en, message, result, sort, zh):
         return {

@@ -1,4 +1,5 @@
 import json
+from models.upgrade_status import UpgradeStatusModel
 
 from common import types
 from deploy.node_base import Node
@@ -8,6 +9,7 @@ from flask_restful import Resource
 class UpgradeStatus(Resource, Node):
     def __init__(self):
         super().__init__() 
+        self.model = UpgradeStatusModel()
         self.process_list = self.get_process_list()
         self.now_list = self.get_now_list()
 
@@ -15,34 +17,22 @@ class UpgradeStatus(Resource, Node):
         data = self.data_format()
         return types.DataModel().model(code=0, data=data)
 
-    def data_format(self):
-        data = {
-            "processList": self.process_list,
-            "nowList": self.now_list,
-            "isEnd": self.get_is_end(),
-            "uuId": ""
-        }
-
-        return data
-
     def get_now_list(self):
         try:
-            with open('/tmp/upgrade_now_status', 'r', encoding='utf-8') as f:
-                content = f.read()
-                data = json.loads(content)
+            now_staus = self.model.get_upgrade_now_status()
+            data = self.status_data_format(now_staus)
         except Exception as e:
-            self._logger.error('open file /tmp/upgrade_now_status faild: %s', e)
+            self._logger.error('upgrade_now_status: %s', e)
             data = []
 
         return data
 
     def get_process_list(self):
         try:
-            with open('/tmp/upgrade_process_status', 'r', encoding='utf-8') as f:
-                content = f.read()
-                data = json.loads(content)
+            process_status = self.model.get_upgrade_process_status()
+            data = self.status_data_format(process_status)
         except Exception as e:
-            self._logger.error('open file /tmp/upgrade_process_status: %s', e)
+            self._logger.error('upgrade_process_status: %s', e)
             data = []
 
         return data
@@ -57,3 +47,26 @@ class UpgradeStatus(Resource, Node):
                 is_end = True
 
         return is_end
+
+    def status_data_format(self, datas):
+        status_list = []
+        for data in datas:
+            status = {
+                'en': data[1],
+                'message': data[2],
+                'result': True if data[3] == 'true' else False,
+                'sort': data[4],
+                'zh': data[5]
+            }
+            status_list.append(status)
+        return status_list
+
+    def data_format(self):    
+        data = {
+            "processList": self.process_list,
+            "nowList": self.now_list,
+            "isEnd": self.get_is_end(),
+            "uuId": ""
+        }
+
+        return data

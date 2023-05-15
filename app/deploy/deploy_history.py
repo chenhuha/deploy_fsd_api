@@ -1,13 +1,10 @@
-import os
-import yaml
-
+from models.deploy_history import DeployHistoryModel
 from common import types
-from flask import current_app
 from flask_restful import Resource
 
 class DeployHistory(Resource):
     def __init__(self):
-       self.deploy_home = current_app.config['DEPLOY_HOME']
+       self.deploy_history_model = DeployHistoryModel()
     
     def get(self):
         data = self.get_deploy_history()
@@ -15,29 +12,22 @@ class DeployHistory(Resource):
         return types.DataModel().model(code=0, data=data)
     
     def delete(self):
-        data = self.del_deploy_history()
+        data = self.deploy_history_model.del_deploy_history()
     
         return types.DataModel().model(code=0, data=data)
 
     def get_deploy_history(self):
-        history_file = self.deploy_home + '/historyDeploy.yml'
-
-        if not os.path.isfile(history_file):
-            return None
-
-        try:
-            with open(history_file, 'r', encoding='utf-8') as f:
-                data = yaml.load(f,Loader=yaml.FullLoader)
-        except Exception as e:
-            self._logger.error('open file historyDeploy.yml: %s', e)
-            data = []
-
-        return data
-    
-    def del_deploy_history(self):
-        history_file = self.deploy_home + '/historyDeploy.yml'
-
-        if os.path.isfile(history_file):
-            os.remove(history_file)
-
-        return None
+        history_data = self.deploy_history_model.get_deploy_history()
+        if history_data:
+            results = types.DataModel().history_deploy_model(
+                paramsJson=history_data[1],
+                log=history_data[2],
+                message=history_data[3],
+                result=bool(history_data[5].lower() == 'true') if history_data[5] != '' else '',
+                startTime=history_data[6],
+                endtime=history_data[7]
+            )
+        else:
+            results = []
+            
+        return results

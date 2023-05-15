@@ -22,3 +22,6 @@ SCRIPT_PATH = '/root/deploy/kly-deploy-api/scripts'
 
 # 升级文件存放位置
 UPGRADE_SAVE_PATH = '/opt/kly-upgrade/'
+
+# 数据库名称
+DB_NAME = '/root/deploy/kly-deploy.db'

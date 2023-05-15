@@ -2,11 +2,13 @@ import os,yaml,json
 from flask import current_app
 from common import types, utils
 from deploy.recommend_config import ReckRecommendConfigCommon
+from models.deploy_history import DeployHistoryModel
 
 
 class ExtendReckRecommendConfigCommon(ReckRecommendConfigCommon):
     def __init__(self):
         super().__init__()
+        self.deploy_history_model = DeployHistoryModel()
 
     def post(self):
         nodes_info = self.get_nodes_from_request()
@@ -23,9 +25,8 @@ class ExtendReckRecommendConfigCommon(ReckRecommendConfigCommon):
 
     def get_deploy_history_pgs(self):
         try:
-            with open(os.path.join(current_app.config['DEPLOY_HOME'], 'historyDeploy.yml'), 'r') as f:
-                datas = yaml.load(f ,Loader=yaml.FullLoader)
-            datas_json = json.loads(datas['paramsJson'])
+            history_data = self.deploy_history_model.get_deploy_history()
+            datas_json = json.loads(history_data[1])
             ceph_datas_num = 0
             for node in datas_json['nodes']:
                 for storage in node['storages']:

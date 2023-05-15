@@ -13,7 +13,7 @@ class DataModel:
             'data': data
         })
     
-    def history_deploy_model(self, startTime, paramsJson, log="",result="", message="" ,key="deploy:klcloud-fsd", id=1, uuid=""):    
+    def history_deploy_model(self, startTime, endtime, paramsJson, log="",result="", message="" ,key="deploy:klcloud-fsd", id=1, uuid=""):    
         return {
             'paramsJson': paramsJson,
             'log': log,
@@ -22,7 +22,7 @@ class DataModel:
             'result': result,
             'startTime': startTime,
             'id': id,
-            'endtime': int(time.time() * 1000),
+            'endtime': endtime,
             'key': key
         }
 

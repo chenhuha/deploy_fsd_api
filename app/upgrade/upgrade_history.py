@@ -1,5 +1,6 @@
 import os
 import json
+from models.upgrade_history import UpgradeHistoryModel
 
 from common import types
 from deploy.node_base import Node
@@ -10,7 +11,7 @@ from flask_restful import reqparse, Resource
 class UpgradeHistory(Resource, Node):
     def __init__(self):
         super().__init__()
-        self.deploy_home = current_app.config['DEPLOY_HOME']
+        self.upgrade_history_model = UpgradeHistoryModel()
 
     def get(self):
         parser = reqparse.RequestParser()
@@ -90,26 +91,16 @@ class UpgradeHistory(Resource, Node):
         return data
 
     def get_upgrade_history(self):
-        history_file = self.deploy_home + '/historyUpgrade.json'
+        history_data = self.upgrade_history_model.get_upgrade_all_history()
+        results = []
+        if history_data:
+            for data in history_data:
+                result = types.DataModel().history_upgarde_model(
+                    version = data[1],
+                    new_version =  data[2],
+                    result = bool(data[3].lower() == 'true') if data[3] != '' else '',
+                    message = data[4]
+                )
+                results.append(result)
 
-        if not os.path.isfile(history_file):
-            return []
-
-        try:
-            with open(history_file, 'r', encoding='utf-8') as f:
-                content = json.load(f)
-            data = content
-        except Exception as e:
-            self._logger.error(
-                f'open file historyUpgrade.json failed, Because: {e}')
-            data = []
-
-        return data
-
-    def del_deploy_history(self):
-        history_file = self.deploy_home + '/historyUpgrade.json'
-
-        if os.path.isfile(history_file):
-            os.remove(history_file)
-
-        return None
+        return results

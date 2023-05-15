@@ -3,6 +3,7 @@ import os
 import shutil
 import paramiko
 import openpyxl
+from models.load_info import LoadInfoModel
 
 from common import types
 from deploy.node_base import Node
@@ -400,11 +401,10 @@ class NetCheckCommon(NetCheck):
         return None
 
     def load_storage(self):
-        try:
-            with (open(current_app.config['DEPLOY_HOME'] + '/load.json', 'r')) as f:
-                data = f.read()
-            return json.loads(data)
-        except Exception as e:
-            self._logger.error(
-                f"Faild open {current_app.config['DEPLOY_HOME'] + '/load.json'} and to json ,Because: {e}")
-            return []
+        model = LoadInfoModel()
+        info = model.get_load_info()
+        if info:
+            data  = json.loads(info[0])
+        else:
+            data = []
+        return data

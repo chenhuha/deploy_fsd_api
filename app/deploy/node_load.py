@@ -1,6 +1,8 @@
 import json
 import threading
 
+from models.load_info import LoadInfoModel
+
 from common import types, utils
 from deploy.node_base import Node
 from flask import current_app
@@ -90,8 +92,7 @@ class NodeLoad(Resource, Node):
         return result_dict
 
     def _write_load_info(self, data):
-        try:
-            with(open(current_app.config['DEPLOY_HOME'] + '/load.json', 'w')) as f:
-                f.write(json.dumps(data))
-        except Exception as e:
-            self._logger.error(f"Failed to write load json file: {e}")
+        model = LoadInfoModel()
+        model.create_load_info_table()
+        model.add_load_info(json.dumps(data))
+

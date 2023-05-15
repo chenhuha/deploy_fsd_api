@@ -11,7 +11,7 @@ class DeployLog(Resource):
         self.deploy_home = current_app.config['DEPLOY_HOME']
     
     def get(self):
-        file_path = "/var/log/deploy.log"
+        file_path = "/var/log/deploy/deploy.log"
 
         if not os.path.isfile(file_path):
             return {'message': 'The file does not exist'}, 404
