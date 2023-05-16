@@ -8,10 +8,8 @@ from flask import current_app
 from flask_restful import Resource
 from extension.preview import ExtendPreview
 
-from common import types, utils, constants
+from common import types
 from deploy.deploy_script import DeployScript
-from models.upgrade_history import UpgradeHistoryModel
-from models.upgrade_status import UpgradeStatusModel
 
 
 class Extension(DeployScript, ExtendPreview):
@@ -20,7 +18,6 @@ class Extension(DeployScript, ExtendPreview):
 
     def post(self):
         preview_info = self.assembly_data()
-        print(preview_info)
         config_file = self.file_conversion(preview_info)
         
         for config in config_file:
