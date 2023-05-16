@@ -33,7 +33,7 @@ function deploy() {
     else
       webhook_process "ready_environment" "准备部署环境失败" false 1 "准备部署环境"
       exit 1
-    # fi
+    fi
 
     #部署文件系统
     if [ "$deploy_ceph_flag" = "True" ]; then
