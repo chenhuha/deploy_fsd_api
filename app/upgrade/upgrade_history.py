@@ -99,7 +99,8 @@ class UpgradeHistory(Resource, Node):
                     version = data[1],
                     new_version =  data[2],
                     result = bool(data[3].lower() == 'true') if data[3] != '' else '',
-                    message = data[4]
+                    message = data[4],
+                    endtime = data[5]
                 )
                 results.append(result)
 

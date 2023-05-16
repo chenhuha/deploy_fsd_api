@@ -63,7 +63,7 @@ class Upgrade(Resource):
                 'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
             self._write_upgrade_file(data)
             record = types.DataModel().history_upgarde_model(
-                new_version, self.version, False, 'Failed to decompress the upgrade package')
+                new_version, self.version, int(time.time() * 1000), False, 'Failed to decompress the upgrade package')
             self._write_history_upgrade_file(record)
             raise
         self._logger.info(
@@ -72,7 +72,7 @@ class Upgrade(Resource):
         data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
         self._write_upgrade_file(data)
         record = types.DataModel().history_upgarde_model(
-            new_version, self.version, '', '-')
+            new_version, self.version, int(time.time() * 1000), '', '-')
         self._write_history_upgrade_file(record)
 
     def mysql_dump(self):

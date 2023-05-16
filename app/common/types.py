@@ -26,11 +26,11 @@ class DataModel:
             'key': key
         }
 
-    def history_upgarde_model(self, new_version, version='', result='', message=''):    
+    def history_upgarde_model(self, new_version, endtime, version='', result='', message=''):    
         return {
             'version': version,
             'new_version': new_version,
             'result': result,
             'message': message,
-            'endtime':  int(time.time() * 1000)
+            'endtime':  endtime
         }

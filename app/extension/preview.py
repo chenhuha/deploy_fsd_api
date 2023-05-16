@@ -12,12 +12,20 @@ class ExtendPreview(Preview):
         self.deploy_history_model = DeployHistoryModel()
         
     def post(self):
-        preview_info = self.get_preview_from_request()
-        history_deploy_preview = self.get_deploy_preview_data()
-        total_preview = self.build_extend_request(history_deploy_preview ,preview_info)
+        total_preview = self.assembly_data()
         config_file = self.file_conversion(total_preview)
+
         return types.DataModel().model(code=0, data=config_file)
 
+    def assembly_data(self):
+        preview_info = self.get_preview_from_request()
+        history_deploy_preview = self.get_deploy_preview_data()
+        print(preview_info)
+        print(history_deploy_preview)
+        total_preview = self.build_extend_request(history_deploy_preview ,preview_info)
+
+        return total_preview
+    
     def get(self):
         file_list = ["ceph-globals.yaml", "global_vars.yaml", "hosts"]
         global_vars_data = []

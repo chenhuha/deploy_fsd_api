@@ -6,6 +6,7 @@ from threading import Thread
 import time
 from flask import current_app
 from flask_restful import Resource
+from extension.preview import ExtendPreview
 
 from common import types, utils, constants
 from deploy.deploy_script import DeployScript
@@ -13,10 +14,26 @@ from models.upgrade_history import UpgradeHistoryModel
 from models.upgrade_status import UpgradeStatusModel
 
 
-class Extension(DeployScript):
+class Extension(DeployScript, ExtendPreview):
     def __init__(self):
-        super.__init__()
-    
+        super().__init__()
+
+    def post(self):
+        preview_info = self.assembly_data()
+        print(preview_info)
+        config_file = self.file_conversion(preview_info)
+        
+        for config in config_file:
+            file_path = os.path.join(
+                current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
+            self._config_bak(
+                current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
+            with open(file_path, 'w', encoding='UTF-8') as f:
+                f.write(config['shellContent'])
+        self.control_deploy(preview_info)
+
+        return types.DataModel().model(code=0, data="")
+
     def control_deploy(self, previews):
         ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
         results = types.DataModel().history_deploy_model(
