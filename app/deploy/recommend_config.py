@@ -79,7 +79,7 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
         cephfs_pool = utils.getNearPower(
             int(pg_all * cephfs_pgp / ceph_copy_num_default))
         ceph_max_size = str(
-            round(self.common_ceph_storage_size() * 0.8, 2) * node_num) + 'GB'
+            round(self.common_ceph_storage_size() * 0.8, 2) * node_num / ceph_copy_num_default) + 'GB'
         return {
             "commonCustomCeph": {
                 "cephCopyNumDefault": ceph_copy_num_default
