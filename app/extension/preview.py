@@ -20,8 +20,6 @@ class ExtendPreview(Preview):
     def assembly_data(self):
         preview_info = self.get_preview_from_request()
         history_deploy_preview = self.get_deploy_preview_data()
-        print(preview_info)
-        print(history_deploy_preview)
         total_preview = self.build_extend_request(history_deploy_preview ,preview_info)
 
         return total_preview

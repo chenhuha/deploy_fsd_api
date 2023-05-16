@@ -1,13 +1,13 @@
 import subprocess
-from flask_restful import reqparse, Resource
-from models.upgrade_status import UpgradeStatusModel
-from models.upgrade_history import UpgradeHistoryModel
-from common import constants, utils, types
-import json
 import logging
 import os
 import yaml
 import time
+
+from flask_restful import reqparse, Resource
+from models.upgrade_status import UpgradeStatusModel
+from models.upgrade_history import UpgradeHistoryModel
+from common import constants, utils, types
 from flask import current_app
 from threading import Thread
 from upgrade.status import UpgradeStatus as Status
@@ -63,7 +63,7 @@ class Upgrade(Resource):
                 'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
             self._write_upgrade_file(data)
             record = types.DataModel().history_upgarde_model(
-                new_version, self.version, int(time.time() * 1000), False, 'Failed to decompress the upgrade package')
+                new_version, int(time.time() * 1000), self.version, False, 'Failed to decompress the upgrade package')
             self._write_history_upgrade_file(record)
             raise
         self._logger.info(
@@ -72,7 +72,7 @@ class Upgrade(Resource):
         data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
         self._write_upgrade_file(data)
         record = types.DataModel().history_upgarde_model(
-            new_version, self.version, int(time.time() * 1000), '', '-')
+            new_version, int(time.time() * 1000), self.version, '', '-')
         self._write_history_upgrade_file(record)
 
     def mysql_dump(self):
