@@ -1,1 +1,1 @@
-KunLun deploy fsd api.
+KunLun deploy api.
