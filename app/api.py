@@ -23,7 +23,7 @@ from extension.net_chek import ExtendNetCheck,ExtendNetCheckCommon
 from extension.recommend_config import ExtendReckRecommendConfigCommon,ExtendShowRecommendConfig
 from extension.preview import ExtendPreview
 from extension.extension import Extension
-from extension.status import ExtensionStatus
+from extension.extend_history import ExtendHistory
 
 from flask import Flask
 from flask_cors import CORS
@@ -55,7 +55,7 @@ class Version(Resource):
 api.add_resource(Version, '/')
 
 # Deploy api register
-api.add_resource(NodeCheck, '/api/deploy/node/check','/api/extend/node/check')
+api.add_resource(NodeCheck, '/api/deploy/node/check', '/api/extend/node/check')
 api.add_resource(NodeSecret, '/api/deploy/node/secret', '/api/extend/node/secret')
 api.add_resource(NodeLoad, '/api/deploy/node/load')
 api.add_resource(NetCheck, '/api/deploy/node/netCheck')
@@ -66,10 +66,10 @@ api.add_resource(ShowRecommendConfig,
 api.add_resource(NetCheckCommon, '/api/deploy/node/netCheck/common')
 api.add_resource(Preview, '/api/deploy/preview')
 api.add_resource(DeployScript, '/api/deploy')
-api.add_resource(Status, '/api/deploy/status')
-api.add_resource(DeployHistory, '/api/deploy/history','/api/extend/history')
-api.add_resource(DeployExport, '/api/deploy/export')
-api.add_resource(DeployLog, '/api/deploy/download')
+api.add_resource(Status, '/api/deploy/status', '/api/extend/status')
+api.add_resource(DeployHistory, '/api/deploy/history')
+api.add_resource(DeployExport, '/api/deploy/export', '/api/extend/export')
+api.add_resource(DeployLog, '/api/deploy/download', '/api/extend/download')
 
 # Upload api register
 api.add_resource(CurrentVersion, '/api/upgrade/current/version')
@@ -88,7 +88,7 @@ api.add_resource(ExtendShowRecommendConfig,
 api.add_resource(ExtendNetCheckCommon, '/api/extend/node/netCheck/common')
 api.add_resource(ExtendPreview, '/api/extend/preview')
 api.add_resource(Extension, '/api/extend')
-api.add_resource(ExtensionStatus, '/api/extend/status')
+api.add_resource(ExtendHistory, '/api/extend/history')
 
 
 if __name__ == '__main__':

@@ -239,16 +239,17 @@ class DeployScript(Preview, Node):
 
     def _write_history_file(self, result):
         self.deploy_history_model.create_deploy_history_table()
-        self.deploy_history_model.add_deploy_history(result['paramsJson'], result['log'], result['message'],
-                                                     result['uuid'], result['result'], result['startTime'],
-                                                     result['endtime'], result['key'])
+        self.deploy_history_model.add_deploy_history(
+            result['paramsJson'], result['log'], result['message'],
+            result['uuid'], result['result'], result['startTime'],
+            result['endtime'], result['key'])
 
     def _write_upgrade_file(self):
         version = self.version()
         model = UpgradeHistoryModel()
         model.create_upgrade_history_table()
         model.add_upgrade_history(
-            '-', version, "true", '-', int(time.time() * 1000))
+            '', version, "true", '', int(time.time() * 1000))
 
     def _create_status_table(self):
         self.deploy_status_model.create_deploy_status_table()

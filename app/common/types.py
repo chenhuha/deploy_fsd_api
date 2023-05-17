@@ -34,3 +34,13 @@ class DataModel:
             'message': message,
             'endtime':  endtime
         }
+
+    def history_extend_model(self, params_json, log, message, result, start_time, endtime):    
+        return {
+            'paramsJson': params_json,
+            'log': log,
+            'message': message,
+            'result': result,
+            'startTime': start_time,
+            'endtime':  endtime
+        }

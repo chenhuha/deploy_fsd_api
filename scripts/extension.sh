@@ -3,16 +3,17 @@
 
 #输入参数
 deploy_ceph_flag=$1
+upgrade_path=$2
 
 deploy_path=/root/deploy
 etc_example_path=${deploy_path}/kly-deploy/etc_example
 ansible_path=${deploy_path}/kly-deploy/ansible
 ceph_ansible_path=${deploy_path}/kly-deploy/ceph-ansible
-
+upgrade_etc_example_path=${upgrade_path}/kly-deploy/etc_example
 #0.检测参数
 function check_param() {
-  if  [ ! -n "$deploy_type" ]; then
-    echo "缺少必要参数，例如: bash setup.sh [deploy_ceph_flag, True|False]"
+  if  [ ! -n "$deploy_ceph_flag" ]; then
+    echo "缺少必要参数，例如: bash extension.sh [deploy_ceph_flag, True|False]"
     exit 1
   fi
 }
@@ -49,7 +50,12 @@ function deploy() {
     fi
 
     #部署虚拟化系统
-    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy/deploy.log 2>&1
+    if [ -n "$upgrade_path" ]; then
+      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml -e @${upgrade_etc_example_path}/upgrade-globals.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy/deploy.log 2>&1
+    else
+      ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/90-setup.yaml >> /var/log/deploy/deploy.log 2>&1
+    fi
+    
     if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "deploy_trochilus" "成功" "true" 3 "部署虚拟化系统"
     else
@@ -82,10 +88,4 @@ function webhook_process() {
 
 #Main function
 check_param
-# deploy
-sleep 10
-webhook_process "ready_environment" "成功" "true" 1 "准备部署环境"
-sleep 10
-webhook_process "deploy_ceph" "成功" "true" 2 "部署文件系统"
-sleep 10
-webhook_process "deploy_trochilus" "成功" "true" 3 "部署虚拟化系统"
+deploy

@@ -75,7 +75,6 @@ class Preview(Resource, DeployPreview):
             global_var_data['voi_data_device'] =  voi_storage
         else:
             global_var_data['only_deploy_voi'] = False
-        global_var_data['fsd_voi_version'] == previews['voiDeployType']
         global_var = yaml.dump(global_var_data, sort_keys=False, width=1200)
         global_var_dict = {'shellName': 'global_vars.yaml',
                            'shellContent': global_var}

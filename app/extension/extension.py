@@ -1,20 +1,21 @@
 import json
-import logging
 import os
 import subprocess
-from threading import Thread
 import time
-from flask import current_app
-from flask_restful import Resource
-from extension.preview import ExtendPreview
 
 from common import types
 from deploy.deploy_script import DeployScript
+from extension.preview import ExtendPreview
+from flask import current_app
+from models.upgrade_history import UpgradeHistoryModel
+from models.extend_history import ExtendHistoryModel
+from threading import Thread
 
 
 class Extension(DeployScript, ExtendPreview):
     def __init__(self):
         super().__init__()
+        self.extend_history_model = ExtendHistoryModel()
 
     def post(self):
         preview_info = self.assembly_data()
@@ -33,15 +34,18 @@ class Extension(DeployScript, ExtendPreview):
 
     def control_deploy(self, previews):
         ceph_flag = previews['common']['commonFixed']['cephServiceFlag']
-        results = types.DataModel().history_deploy_model(
-            paramsJson=json.dumps(previews),
-            startTime=int(time.time() * 1000),
+        results = types.DataModel().history_extend_model(
+            params_json=json.dumps(previews),
+            log='',
+            message='',
+            result='',
+            start_time=int(time.time() * 1000),
             endtime=int(time.time() * 1000)
         )
         
         self._write_history_file(results)
-
-        cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/extension.sh', str(ceph_flag)]
+        upgrade_path = self._get_upgrade_path()
+        cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/extension.sh', str(ceph_flag), str(upgrade_path)]
         self._logger.info('extension command: %s', cmd)
         results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         thread = Thread(target=self._shell_return_listen, args=(
@@ -58,16 +62,30 @@ class Extension(DeployScript, ExtendPreview):
             else:
                 deploy_message = 'deploy faild.'
                 deploy_result = 'false'
-            results = types.DataModel().history_deploy_model(
+            results = types.DataModel().history_extend_model(
+                params_json=json.dumps(previews),
                 log=str(subprocess_1.stdout.read(), encoding='utf-8'),
-                paramsJson=json.dumps(previews),
-                startTime=start_time,
+                start_time=start_time,
                 endtime=int(time.time() * 1000),
                 message=deploy_message,
                 result=deploy_result
             )
+
             self._write_history_file(results)
             if deploy_result.lower() == 'true':
+                self.deploy_history_model.update_deploy_history_params(results['paramsJson'])
                 self._write_node_info_csv(previews['nodes'])
-                self._write_upgrade_file()
                 self.scp_deploy(previews['nodes'])
+
+    def _get_upgrade_path(self):
+        model = UpgradeHistoryModel()
+        update_path = model.get_upgrade_path()
+        if update_path:
+            return update_path[0]
+        return ''
+    
+    def _write_history_file(self, result):
+        self.extend_history_model.create_extend_history_table()
+        self.extend_history_model.add_extend_history(
+            result['paramsJson'], result['log'], result['message'], 
+            result['result'], result['startTime'], result['endtime'])

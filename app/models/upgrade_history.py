@@ -18,7 +18,8 @@ class UpgradeHistoryModel:
                     new_version TEXT,
                     result TEXT,
                     message TEXT,
-                    endtime INTEGER
+                    endtime INTEGER,
+                    upgrade_path TEXT
                 );
             ''')
             c.close()
@@ -35,6 +36,9 @@ class UpgradeHistoryModel:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
             c.execute('''
+                DELETE FROM upgrade_history;
+            ''')
+            c.execute('''
                 INSERT INTO upgrade_history (version, new_version, result, message, endtime)
                 VALUES (?, ?, ?, ?, ?)
             ''', (version, new_version, result, message, endtime))
@@ -47,14 +51,14 @@ class UpgradeHistoryModel:
         finally:
             conn.close()
     
-    def update_upgrade_history(self, result, message, endtime):
+    def update_upgrade_history(self, result, message, endtime, upgrade_path):
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
             c.execute('''
-                UPDATE upgrade_history SET result = ?, message= ?, endtime= ? WHERE id = (
+                UPDATE upgrade_history SET result = ?, message = ?, endtime = ?, upgrade_path = ? WHERE id = (
                 SELECT id FROM upgrade_history ORDER BY id DESC LIMIT 1);
-            ''', (result, message, endtime))
+            ''', (result, message, endtime, upgrade_path))
             c.close()
             conn.commit()
             self._logger.info("upgrade_history update successfully")
@@ -87,6 +91,25 @@ class UpgradeHistoryModel:
             c = conn.cursor()
             c.execute('''
                 SELECT new_version FROM upgrade_history ORDER BY id DESC LIMIT 1;
+            ''')
+            result = c.fetchone()
+            c.close()
+            return result
+        except sqlite3.Error as e:
+            self._logger.error(
+                f"Error occurred while getting version : {e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_upgrade_path(self):
+        try:
+            conn = sqlite3.connect(self.DB_NAME)
+            c = conn.cursor()
+            c.execute('''
+                SELECT upgrade_path FROM upgrade_history 
+                WHERE result = 'true' and  version IS NOT NULL
+                ORDER BY id DESC LIMIT 1;
             ''')
             result = c.fetchone()
             c.close()
