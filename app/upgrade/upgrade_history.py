@@ -55,11 +55,6 @@ class UpgradeHistory(Resource, Node):
 
         return types.DataModel().model(code=0, data=data)
 
-    def delete(self):
-        data = self.del_deploy_history()
-
-        return types.DataModel().model(code=0, data=data)
-
     def filter_and_paginate_history_data(self, history_data, page, size, version, new_version, start_time, end_time, result, sort):
         # 过滤数据
         if version:

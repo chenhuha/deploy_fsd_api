@@ -69,7 +69,22 @@ class DeployHistoryModel:
             return None
         finally:
             conn.close()
-
+    
+    def update_deploy_history_params(self, params_json):
+        try:
+            conn = sqlite3.connect(self.DB_NAME)
+            c = conn.cursor()
+            c.execute('''
+                UPDATE deploy_history SET params_json = ?);
+            ''', (params_json,))
+            c.close()
+            conn.commit()
+            self._logger.info("upgrade_history update successfully")
+        except sqlite3.Error as e:
+            self._logger.error(
+                f"Error occurred while update new upgrade_history: {e}")
+        finally:
+            conn.close()
 
     def del_deploy_history(self):
         try:

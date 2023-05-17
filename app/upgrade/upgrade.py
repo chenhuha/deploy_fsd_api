@@ -10,7 +10,6 @@ from models.upgrade_history import UpgradeHistoryModel
 from common import constants, utils, types
 from flask import current_app
 from threading import Thread
-from upgrade.status import UpgradeStatus as Status
 
 
 class Upgrade(Resource):
@@ -103,10 +102,11 @@ class Upgrade(Resource):
         cmd = ['sh', os.path.join(
             upgrade_path + '/kly-deploy-api/scripts', 'upgrade.sh'), upgrade_path]
 
+        # cmd = ['sh', '/root/caotingv/kly-deploy-api/scripts/upgrade.sh', upgrade_file]
         try:
             results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             thread = Thread(target=self._shell_return_listen, args=(
-                current_app._get_current_object(), results))
+                current_app._get_current_object(), results, upgrade_path))
             thread.start()
             self._logger.info(f"Execute command '{cmd}', result:{results}")
         except Exception as e:
@@ -115,7 +115,7 @@ class Upgrade(Resource):
             self._update_history_upgrade_file(
                 result="false", message="Description Failed to execute the upgrade program")
 
-    def _shell_return_listen(self, app, subprocess_1):
+    def _shell_return_listen(self, app, subprocess_1, upgrade_path):
         with app.app_context():
             subprocess_1.wait()
             status = self.upgrade_status_model.get_upgrade_last_status()
@@ -125,7 +125,8 @@ class Upgrade(Resource):
             else:
                 upgrade_message = '升级失败！'
                 upgrade_result = 'false'
-            self._update_history_upgrade_file(upgrade_message, upgrade_result)
+            
+            self._update_history_upgrade_file(upgrade_message, upgrade_result, upgrade_path)
 
     def _write_history_upgrade_file(self, record):
         self.upgrade_history_model.add_upgrade_history(
@@ -135,10 +136,10 @@ class Upgrade(Resource):
             record['message'], 
             record['endtime'])
 
-    def _update_history_upgrade_file(self, message, result):
+    def _update_history_upgrade_file(self, message, result, upgrade_path = ''):
         try:
             self.upgrade_history_model.update_upgrade_history(
-                result, message, int(time.time() * 1000))
+                result, message, int(time.time() * 1000), upgrade_path)
             if result:
                 version = self.upgrade_history_model.get_upgrade_version()
                 with open('/etc/klcloud-release', 'w') as f:

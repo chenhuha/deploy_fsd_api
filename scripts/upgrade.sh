@@ -63,11 +63,8 @@ function deploy_upgrade_program() {
     process "deploy_upgrade_program" "执行升级程序失败" false 2 "deploy_upgrade_program"
     exit 1
   fi
-}
 
-function check_service_status() {
   ports=(9000 9001 9002 9003 9010 9090 9093)
-
   for port in "${ports[@]}"
   do
     if ! netstat -an | grep -w "$port" >/dev/null
@@ -103,4 +100,3 @@ process "unzip_upgrade_package" "" true 0 "解压升级包成功"
 process "backup_data" "" true 1 "备份数据库成功"
 
 deploy_upgrade_program
-check_service_status
