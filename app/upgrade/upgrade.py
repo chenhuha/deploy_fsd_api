@@ -15,14 +15,16 @@ from threading import Thread
 class Upgrade(Resource):
     def __init__(self):
         self._logger = logging.getLogger(__name__)
+        self.script_path = current_app.config['SCRIPT_PATH']
         self.global_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml')
+        
         self.version = utils.get_version()
 
         self.upgrade_history_model = UpgradeHistoryModel()
         self.upgrade_status_model = UpgradeStatusModel()
 
-    def _get_upgrade_from_request(self):
+    def get_upgrade_from_request(self):
         parser = reqparse.RequestParser()
         parser.add_argument('filename', required=True, type=str, location='json',
                             help='The filename field does not exist')
@@ -30,11 +32,8 @@ class Upgrade(Resource):
         return parser.parse_args()
 
     def post(self):
-        file_name = self._get_upgrade_from_request()['filename']
-        
-        self.upgrade_status_model.create_upgrade_status_table()
-        data = self._data_build('unzip_upgrade_package', '', '-', 0, '解压升级包')
-        self._write_upgrade_file(data)
+        file_name = self.get_upgrade_from_request()['filename']
+        self._status_table_init()
 
         thread = Thread(target=self.start_upgrade, args=(
             current_app._get_current_object(), file_name))
@@ -70,9 +69,9 @@ class Upgrade(Resource):
 
         data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
         self._write_upgrade_file(data)
-        record = types.DataModel().history_upgarde_model(
-            new_version, int(time.time() * 1000), self.version, '', '-')
-        self._write_history_upgrade_file(record)
+        # record = types.DataModel().history_upgarde_model(
+        #     new_version, int(time.time() * 1000), self.version, '', '-')
+        # self._write_history_upgrade_file(record)
 
     def mysql_dump(self):
         with open(self.global_path, 'r') as f:
@@ -87,7 +86,7 @@ class Upgrade(Resource):
             data = self._data_build(
                 'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
             self._logger.error(
-                f"Execute command to dump mysql is faild,Because: {e}")
+                f"Execute command to dump mysql is faild,Because: {err}")
             self._write_upgrade_file(data)
             self._update_history_upgrade_file(
                 result="false", message="Database backup failure")
@@ -99,10 +98,10 @@ class Upgrade(Resource):
         upgrade_file = os.path.splitext(os.path.splitext(filename)[0])[0]
         upgrade_path = os.path.join(
             current_app.config['UPGRADE_SAVE_PATH'], upgrade_file)
-        cmd = ['sh', os.path.join(
-            upgrade_path + '/kly-deploy-api/scripts', 'upgrade.sh'), upgrade_path]
+        # cmd = ['sh', os.path.join(
+        #     upgrade_path + '/kly-deploy-api/scripts', 'upgrade.sh'), upgrade_path]
 
-        # cmd = ['sh', '/root/caotingv/kly-deploy-api/scripts/upgrade.sh', upgrade_file]
+        cmd = ['sh', '/root/caotingv/kly-deploy-api/scripts/upgrade.sh', upgrade_file]
         try:
             results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             thread = Thread(target=self._shell_return_listen, args=(
@@ -151,6 +150,22 @@ class Upgrade(Resource):
     def _write_upgrade_file(self, data):
         self.upgrade_status_model.add_upgrade_now_status(
             data['en'], data['message'], data['result'], data['sort'], data['zh'])
+
+    def _status_table_init(self):
+        self.upgrade_status_model.create_upgrade_status_table()
+        cmd = f"sh {self.script_path}/upgrade_data_init.sh"
+        try:
+            _, result, _ = utils.execute(cmd)
+        except Exception as e:
+            self._logger.error(f"Failed to execute upgrade_data_init script: {e}")
+            return
+        
+        self._logger.info('upgrade_data_init command: %s, result: %s', cmd, result)
+        record = types.DataModel().history_upgarde_model(
+            '-', int(time.time() * 1000), self.version, '', '-')
+        self._write_history_upgrade_file(record) 
+        data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
+        self._write_upgrade_file(data)
 
     def _data_build(self, en, message, result, sort, zh):
         return {

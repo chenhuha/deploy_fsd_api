@@ -6,8 +6,6 @@ import shutil
 from common import types
 from deploy.net_check import NetCheck,NetCheckCommon
 from models.deploy_history import DeployHistoryModel
-from flask import current_app
-
 
 
 class ExtendNetCheck(NetCheck):
@@ -46,6 +44,7 @@ class ExtendNetCheck(NetCheck):
                 }
             
             history_data = self.deploy_history_model.get_deploy_history()
+            print(history_data)
             datas_json = json.loads(history_data[1])
             for node in datas_json['nodes']:
                 card_data['cards'] = node['networkCards']

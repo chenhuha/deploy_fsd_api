@@ -74,6 +74,7 @@ function deploy_upgrade_program() {
     fi
   done
   process "check_service_status" "" true 3 "check_service_status"
+  exit 0
 }
 
 # 上报所有流程

@@ -65,7 +65,7 @@ function deploy() {
     #发送webhook
     webhook_all_process_retry
     #清除虚拟化系统
-  ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/99-destroy.yaml > /var/log/deploy/deploy.log 2>&1
+    ansible-playbook -i ${etc_example_path}/hosts -e @${etc_example_path}/ceph-globals.yaml -e @${etc_example_path}/global_vars.yaml ${ansible_path}/99-destroy.yaml > /var/log/deploy/deploy.log 2>&1
     if [ "$(grep 'failed=' /var/log/deploy/deploy.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
       webhook_process "clear_trochilus" "成功" "true" 1 "清除虚拟化系统"
     else

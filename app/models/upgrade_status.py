@@ -46,6 +46,9 @@ class UpgradeStatusModel:
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
+            # c.execute('''
+            #     DELETE FROM upgrade_now_status;
+            # ''')
             c.execute('''
                 INSERT INTO upgrade_now_status (en, message, result, sort, zh)
                 VALUES (?, ?, ?, ?, ?)
@@ -58,7 +61,7 @@ class UpgradeStatusModel:
                 f"Error occurred while adding new upgrade: {e}")
         finally:
             conn.close()
-    
+
     def get_upgrade_now_status(self):
         try:
             c = self.conn.cursor()

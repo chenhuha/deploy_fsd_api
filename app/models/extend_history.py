@@ -62,8 +62,8 @@ class ExtendHistoryModel:
             c.close()
             return result
         except sqlite3.Error as e:
-            self._logger.error(
-                f"Error occurred while getting extendment by uuid: {e}")
+            self._logger.warning(
+                f"Error occurred while getting extendment: {e}")
             return None
         finally:
             conn.close()
