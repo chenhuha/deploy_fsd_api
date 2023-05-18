@@ -94,4 +94,3 @@ class NodeLoad(Resource, Node):
         model = LoadInfoModel()
         model.create_load_info_table()
         model.add_load_info(json.dumps(data))
-

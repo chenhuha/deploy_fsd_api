@@ -101,4 +101,3 @@ class DeployHistoryModel:
         finally:
             conn.close()
             return None
-

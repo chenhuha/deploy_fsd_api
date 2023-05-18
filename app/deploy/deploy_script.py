@@ -15,6 +15,7 @@ from models.deploy_history import DeployHistoryModel
 from models.load_info import LoadInfoModel
 from models.upgrade_history import UpgradeHistoryModel
 from models.deploy_status import DeployStatusModel
+from models.extend_history import ExtendHistoryModel
 
 
 class DeployScript(Preview, Node):
@@ -104,6 +105,7 @@ class DeployScript(Preview, Node):
             if deploy_result.lower() == 'true':
                 self._write_node_info_csv(previews['nodes'])
                 self._write_upgrade_file()
+                self._write_extend_file(results)
                 self.scp_deploy(previews['nodes'])
 
     def _net_info(self, cards):
@@ -251,5 +253,14 @@ class DeployScript(Preview, Node):
         model.add_upgrade_history(
             '', version, "true", '', int(time.time() * 1000))
 
+    def _write_extend_file(self, result):
+        model = ExtendHistoryModel()
+        model.create_extend_history_table()
+        model.add_extend_history(
+            result['paramsJson'], result['log'], 
+            result['message'], result['result'], 
+            result['startTime'], result['endtime']
+        )
+        
     def _create_status_table(self):
         self.deploy_status_model.create_deploy_status_table()

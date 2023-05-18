@@ -35,9 +35,9 @@ class UpgradeHistoryModel:
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            c.execute('''
-                DELETE FROM upgrade_history;
-            ''')
+            # c.execute('''
+            #     DELETE FROM upgrade_history;
+            # ''')
             c.execute('''
                 INSERT INTO upgrade_history (version, new_version, result, message, endtime)
                 VALUES (?, ?, ?, ?, ?)
