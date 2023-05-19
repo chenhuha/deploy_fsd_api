@@ -46,9 +46,9 @@ class UpgradeStatusModel:
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            # c.execute('''
-            #     DELETE FROM upgrade_now_status;
-            # ''')
+            c.execute('''
+                DELETE FROM upgrade_now_status;
+            ''')
             c.execute('''
                 INSERT INTO upgrade_now_status (en, message, result, sort, zh)
                 VALUES (?, ?, ?, ?, ?)
