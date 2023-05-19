@@ -117,6 +117,6 @@ class UpgradeHistoryModel:
         except sqlite3.Error as e:
             self._logger.error(
                 f"Error occurred while getting version : {e}")
-            return None
+            return ''
         finally:
             conn.close()

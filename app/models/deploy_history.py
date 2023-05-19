@@ -74,9 +74,7 @@ class DeployHistoryModel:
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            c.execute('''
-                UPDATE deploy_history SET params_json = ? ;)
-            ''', (params_json,))
+            c.execute("UPDATE deploy_history SET params_json = ? )", (params_json))
             c.close()
             conn.commit()
             self._logger.info("upgrade_history update successfully")
