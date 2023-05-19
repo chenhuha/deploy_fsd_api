@@ -90,7 +90,9 @@ class UpgradeHistoryModel:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
             c.execute('''
-                SELECT new_version FROM upgrade_history ORDER BY id DESC LIMIT 1;
+                SELECT new_version FROM upgrade_history 
+                WHERE result = 'true' and  version IS NOT NULL
+                ORDER BY id DESC LIMIT 1;
             ''')
             result = c.fetchone()
             c.close()

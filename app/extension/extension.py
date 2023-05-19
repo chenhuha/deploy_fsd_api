@@ -74,8 +74,7 @@ class Extension(DeployScript, ExtendPreview):
 
             self._write_history_file(results)
             if deploy_result.lower() == 'true':
-                self.deploy_history_model.update_deploy_history_params(
-                    json.dumps(results['paramsJson']))
+                self.deploy_history_model.update_deploy_history_params(results['paramsJson'])
                 self._write_node_info_csv(previews['nodes'])
                 self.scp_deploy(previews['nodes'])
 

@@ -1,7 +1,6 @@
 import subprocess
 import logging
 import os
-import yaml
 import time
 
 from flask_restful import reqparse, Resource
@@ -15,84 +14,66 @@ from threading import Thread
 class Upgrade(Resource):
     def __init__(self):
         self._logger = logging.getLogger(__name__)
+        self.file_name = self.get_upgrade_from_request()['filename']
+        self.new_version = self.get_upgrade_from_request()['new_version']
+        self.version = utils.get_version()
         self.script_path = current_app.config['SCRIPT_PATH']
         self.global_path = os.path.join(
             current_app.config['ETC_EXAMPLE_PATH'], 'global_vars.yaml')
-        
-        self.version = utils.get_version()
-
         self.upgrade_history_model = UpgradeHistoryModel()
         self.upgrade_status_model = UpgradeStatusModel()
+
+    def post(self):
+        self.upgrade_status_table_init()
+
+        thread = Thread(target=self.start_upgrade, args=(
+            current_app._get_current_object(), self.file_name))
+        thread.start()
+
+        return types.DataModel().model(code=0, data="")
 
     def get_upgrade_from_request(self):
         parser = reqparse.RequestParser()
         parser.add_argument('filename', required=True, type=str, location='json',
                             help='The filename field does not exist')
-
+        parser.add_argument('new_version', required=True, type=str, location='json',
+                            help='The new_version field does not exist')
         return parser.parse_args()
-
-    def post(self):
-        file_name = self.get_upgrade_from_request()['filename']
-        self._status_table_init()
-
-        thread = Thread(target=self.start_upgrade, args=(
-            current_app._get_current_object(), file_name))
-        thread.start()
-
-        return types.DataModel().model(code=0, data="")
-
-    def start_upgrade(self, app, file_name):
+    
+    def start_upgrade(self, app, filename):
         with app.app_context():
-            self.decompression(file_name)
-            self.mysql_dump()
-            self.upgrade_script(file_name)
+            self.unzip_upgade_package(filename)
+            self.upgrade_script(filename)
 
-    def decompression(self, file_name):
+    def unzip_upgade_package(self, filename):
         file_path = os.path.join(
-            current_app.config['UPGRADE_SAVE_PATH'], file_name)
-        new_version = utils.get_new_verison(file_name)
+            current_app.config['UPGRADE_SAVE_PATH'], filename)
+        
         cmd = constants.COMMAND_TAR_UNZIP % (
             file_path, current_app.config['UPGRADE_SAVE_PATH'])
+        
         code, result, err = utils.execute(cmd)
         if code != 0:
             self._logger.error(
-                f'Decompression file {file_path} Field, Because: {err}')
-            data = self._data_build(
-                'unzip_upgrade_package', 'Failed to decompress the upgrade package', False, 0, '解压升级包')
-            self._write_upgrade_file(data)
-            record = types.DataModel().history_upgarde_model(
-                new_version, int(time.time() * 1000), self.version, False, 'Failed to decompress the upgrade package')
-            self._write_history_upgrade_file(record)
+                f'unzip file {file_path} Field, Because: {err}')
+            self.upgrade_status_model.add_upgrade_now_status(
+                'unzip_upgrade_package', 
+                'Failed to unzip upgrade package' 
+                'false', 0, '解压升级包')
+            self.upgrade_history_model.add_upgrade_history(
+                self.version, self.new_version, 'false', 
+                'Failed to unzip the upgrade package', 
+                int(time.time() * 1000))
             raise
+
         self._logger.info(
-            f"Execute command to decompression zip package '{cmd}', result:{result}")
-
-        data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
-        self._write_upgrade_file(data)
-        # record = types.DataModel().history_upgarde_model(
-        #     new_version, int(time.time() * 1000), self.version, '', '-')
-        # self._write_history_upgrade_file(record)
-
-    def mysql_dump(self):
-        with open(self.global_path, 'r') as f:
-            config_text = f.read()
-        configs = yaml.load(config_text, Loader=yaml.FullLoader)
-        mariadb_root_password = configs['mariadb_root_password']
-        cmd = constants.COMMAND_MYSQL_DUMP % ('root', mariadb_root_password, '127.0.0.1', os.path.join(
-            current_app.config['UPGRADE_SAVE_PATH'], 'upgrade_bak_{}_{}.sql'.format(self.version, time.strftime('%Y-%m-%d', time.localtime(time.time())))))
-        self._logger.info(f"Execute command '{cmd}'")
-        code, result, err = utils.execute(cmd)
-        if code != 0:
-            data = self._data_build(
-                'dump_mysql_data', 'Database backup failure', False, 1, '备份数据库')
-            self._logger.error(
-                f"Execute command to dump mysql is faild,Because: {err}")
-            self._write_upgrade_file(data)
-            self._update_history_upgrade_file(
-                result="false", message="Database backup failure")
-            raise
-        data = self._data_build('dump_mysql_data', '', True, 1, '备份数据库')
-        self._write_upgrade_file(data)
+            f"Execute command to unzip package '{cmd}', result:{result}")
+        self.upgrade_status_model.add_upgrade_now_status(
+            'unzip_upgrade_package', '', 
+            'true', 0, '解压升级包')
+        self.upgrade_history_model.add_upgrade_history(
+            self.version, self.new_version, 'true', 
+            '', int(time.time() * 1000))
 
     def upgrade_script(self, filename):
         upgrade_file = os.path.splitext(os.path.splitext(filename)[0])[0]
@@ -111,7 +92,7 @@ class Upgrade(Resource):
             self._logger.error(
                 f"Execute command to Upgrade is faild ,Because: {e}")
             self._update_history_upgrade_file(
-                result="false", message="Description Failed to execute the upgrade program")
+                result="false", message="Failed to execute the upgrade program")
 
     def _shell_return_listen(self, app, subprocess_1, upgrade_path):
         with app.app_context():
@@ -126,31 +107,18 @@ class Upgrade(Resource):
             
             self._update_history_upgrade_file(upgrade_message, upgrade_result, upgrade_path)
 
-    def _write_history_upgrade_file(self, record):
-        self.upgrade_history_model.add_upgrade_history(
-            record['version'], 
-            record['new_version'], 
-            record['result'], 
-            record['message'], 
-            record['endtime'])
-
     def _update_history_upgrade_file(self, message, result, upgrade_path = ''):
         try:
             self.upgrade_history_model.update_upgrade_history(
                 result, message, int(time.time() * 1000), upgrade_path)
             if result:
-                version = self.upgrade_history_model.get_upgrade_version()
                 with open('/etc/klcloud-release', 'w') as f:
-                    f.write(version[0])
+                    f.write(self.new_version)
         except Exception as e:
             self._logger.error(
                 f"Faild update /etc/klcloud-release ,Because: {e}")
 
-    def _write_upgrade_file(self, data):
-        self.upgrade_status_model.add_upgrade_now_status(
-            data['en'], data['message'], data['result'], data['sort'], data['zh'])
-
-    def _status_table_init(self):
+    def upgrade_status_table_init(self):
         self.upgrade_status_model.create_upgrade_status_table()
         cmd = f"sh {self.script_path}/upgrade_data_init.sh"
         try:
@@ -160,17 +128,3 @@ class Upgrade(Resource):
             return
         
         self._logger.info('upgrade_data_init command: %s, result: %s', cmd, result)
-        record = types.DataModel().history_upgarde_model(
-            '-', int(time.time() * 1000), self.version, '', '-')
-        self._write_history_upgrade_file(record) 
-        data = self._data_build('unzip_upgrade_package', '', True, 0, '解压升级包')
-        self._write_upgrade_file(data)
-
-    def _data_build(self, en, message, result, sort, zh):
-        return {
-            "en": en,
-            "message": message,
-            "result": result,
-            "sort": sort,
-            "zh": zh
-        }

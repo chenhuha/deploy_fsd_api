@@ -46,7 +46,7 @@ class LoadInfoModel:
             if result:
                 c.execute('''
                     UPDATE load_info SET info = ? where id = 2
-                ''', (info))
+                ''', (info,))
             else:
                 c.execute('''
                     INSERT INTO load_info (info) VALUES (?)
