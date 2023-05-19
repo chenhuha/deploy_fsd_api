@@ -35,7 +35,6 @@ function deploy_platform_upgrade() {
   fi
 }
 
-
 # Deploying front-end upgrade
 function deploy_front_upgrade(){
   mv /var/www/html /var/www/html_$(date +%s)
@@ -55,7 +54,17 @@ function deploy_front_upgrade(){
 
 # Service upgrade
 function deploy_upgrade_program() { 
-  # 服务升级
+  # backup database
+  mariadb_root_password=$(grep 'mariadb_root_password:' ${deploy_etc_example_path}/global_vars.yaml | awk '{print $2}')
+  docker exec mariadb mysqldump -uroot -p${mariadb_root_password} --all-databases --single-transaction > ${upgrade_path}/database-backup-`date +%Y-%m-%d-%H-%M`.sql
+  if [ $? -eq 0 ]; then
+    process "backup_data" "" true 1 "backup_data"
+  else
+    process "backup_data" "数据库备份失败" false 1 "backup_data"
+    exit 1
+  fi
+
+  # service_upgrade
   ansible-playbook -i ${deploy_etc_example_path}/hosts -e @${deploy_etc_example_path}/ceph-globals.yaml -e @${deploy_etc_example_path}/global_vars.yaml -e @${upgrade_etc_example_path}/upgrade-globals.yaml ${upgrade_ansible_path}/95-upgrade.yaml> /var/log/deploy/upgrade.log 2>&1
   if [ "$(grep 'failed=' /var/log/deploy/upgrade.log | awk '{print $6}' | awk -F '=' '{print $2}' | awk '$1 != 0')" = "" ] ; then
     process "deploy_upgrade_program" "" true 2 "deploy_upgrade_program"
@@ -64,6 +73,7 @@ function deploy_upgrade_program() {
     exit 1
   fi
 
+  # check_service_port
   ports=(9000 9001 9002 9003 9010 9090 9093)
   for port in "${ports[@]}"
   do
@@ -98,6 +108,4 @@ function process() {
 check_param
 all_process
 process "unzip_upgrade_package" "" true 0 "解压升级包成功"
-process "backup_data" "" true 1 "备份数据库成功"
-
 deploy_upgrade_program
