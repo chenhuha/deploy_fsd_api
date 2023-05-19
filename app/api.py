@@ -24,6 +24,7 @@ from extension.recommend_config import ExtendReckRecommendConfigCommon,ExtendSho
 from extension.preview import ExtendPreview
 from extension.extension import Extension
 from extension.extend_history import ExtendHistory
+from extension.status import ExtendStatus
 
 from flask import Flask
 from flask_cors import CORS
@@ -66,7 +67,7 @@ api.add_resource(ShowRecommendConfig,
 api.add_resource(NetCheckCommon, '/api/deploy/node/netCheck/common')
 api.add_resource(Preview, '/api/deploy/preview')
 api.add_resource(DeployScript, '/api/deploy')
-api.add_resource(Status, '/api/deploy/status', '/api/extend/status')
+api.add_resource(Status, '/api/deploy/status')
 api.add_resource(DeployHistory, '/api/deploy/history')
 api.add_resource(DeployExport, '/api/deploy/export', '/api/extend/export')
 api.add_resource(DeployLog, '/api/deploy/download', '/api/extend/download')
@@ -89,6 +90,7 @@ api.add_resource(ExtendNetCheckCommon, '/api/extend/node/netCheck/common')
 api.add_resource(ExtendPreview, '/api/extend/preview')
 api.add_resource(Extension, '/api/extend')
 api.add_resource(ExtendHistory, '/api/extend/history')
+api.add_resource(ExtendStatus, '/api/extend/status')
 
 
 if __name__ == '__main__':

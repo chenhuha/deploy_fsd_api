@@ -1,4 +1,4 @@
-import json,yaml
+import json
 import logging
 import os
 import shutil
@@ -14,7 +14,6 @@ class ExtendNetCheck(NetCheck):
         self._logger = logging.getLogger(__name__)
         self.nodes = self.get_nodes_from_request() + self.get_node_load_card_info()
         self.node_list = self.get_info_with_from(self.nodes)
-        self.deploy_history_model = DeployHistoryModel()
 
     def post(self):
         data = self.multiple_nodes_data()
@@ -43,8 +42,8 @@ class ExtendNetCheck(NetCheck):
                 "nodeName": ""
                 }
             
-            history_data = self.deploy_history_model.get_deploy_history()
-            print(history_data)
+            model =  DeployHistoryModel()
+            history_data = model.get_deploy_history()
             datas_json = json.loads(history_data[1])
             for node in datas_json['nodes']:
                 card_data['cards'] = node['networkCards']
@@ -57,7 +56,7 @@ class ExtendNetCheck(NetCheck):
             raise
 
 
-class ExtendNetCheckCommon(ExtendNetCheck,NetCheckCommon):
+class ExtendNetCheckCommon(ExtendNetCheck, NetCheckCommon):
     def __init__(self):
         self.deploy_history_model = DeployHistoryModel()
         nodes = self.get_nodes_from_request()

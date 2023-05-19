@@ -6,6 +6,10 @@ from common import types
 
 
 class ExtendNodeLoad(NodeLoad):
+    def __init__(self) -> None:
+        super().__init__()
+        self.model = LoadInfoModel()
+
     def post(self):
         data = self.get_device_info()
 
@@ -22,10 +26,12 @@ class ExtendNodeLoad(NodeLoad):
         return types.DataModel().model(code=0, data=data)
 
     def get_deploy_node_load_info(self):
-        model = LoadInfoModel()
-        info = model.get_load_info()
+        info = self.model.get_load_info_with_id(1)
         if info:
             data  = json.loads(info[0])
         else:
             data = []
         return data
+    
+    def _write_load_info(self, info):
+        self.model.add_load_info(json.dumps(info))

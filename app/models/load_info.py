@@ -13,7 +13,7 @@ class LoadInfoModel:
             c = self.conn.cursor()
             c.execute('''
                 CREATE TABLE IF NOT EXISTS load_info (
-                    uuid INTEGER PRIMARY KEY,
+                    id INTEGER PRIMARY KEY,
                     info TEXT
                     );
             ''')
@@ -24,13 +24,29 @@ class LoadInfoModel:
             self._logger.error(
                 f"Error occurred while creating table load_info: {e}")
 
+    def first_add_load_info(self, info):
+        try:
+            c = self.conn.cursor()
+            c.execute("DELETE FROM load_info;")
+            c.execute('''
+                INSERT INTO load_info (info) VALUES (?)
+            ''', (info,))
+            c.close()
+            self.conn.commit()
+            self._logger.info("New load_info added successfully")
+        except sqlite3.Error as e:
+            self._logger.error(
+                f"Error occurred while adding new load_info: {e}")
+
     def add_load_info(self, info):
         try:
             c = self.conn.cursor()
-            c.execute("SELECT * FROM load_info")
+            c.execute("SELECT * FROM load_info WHERE id = 2")
             result = c.fetchone()
             if result:
-                c.execute("UPDATE load_info SET info = ? ", (info,))
+                c.execute('''
+                    UPDATE load_info SET info = ? where id = 2
+                ''', (info))
             else:
                 c.execute('''
                     INSERT INTO load_info (info) VALUES (?)
@@ -46,6 +62,18 @@ class LoadInfoModel:
         try:
             c = self.conn.cursor()
             c.execute("SELECT info FROM load_info")
+            result = c.fetchone()
+            c.close()
+            return result
+        except sqlite3.Error as e:
+            self._logger.error(
+                f"Error occurred while getting load_info: {e}")
+            return None
+    
+    def get_load_info_with_id(self, id):
+        try:
+            c = self.conn.cursor()
+            c.execute("SELECT info FROM load_info where id = ?",  (id,))
             result = c.fetchone()
             c.close()
             return result
