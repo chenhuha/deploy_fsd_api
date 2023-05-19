@@ -21,7 +21,7 @@ class ExtendNodeLoad(NodeLoad):
         
         deploy_load_json = self.get_deploy_node_load_info()
         deploy_load_json.extend(data)
-        self.model.add_load_info(json.dumps(deploy_load_json))
+        self.model.add_load_info_with_id(2, json.dumps(deploy_load_json))
         
         return types.DataModel().model(code=0, data=data)
 
