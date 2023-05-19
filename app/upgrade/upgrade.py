@@ -111,7 +111,8 @@ class Upgrade(Resource):
         try:
             self.upgrade_history_model.update_upgrade_history(
                 result, message, int(time.time() * 1000), upgrade_path)
-            if result:
+        
+            if result == 'true':
                 with open('/etc/klcloud-release', 'w') as f:
                     f.write(self.new_version)
         except Exception as e:

@@ -1,3 +1,6 @@
+#!/usr/bin/bash
+#set -x
+
 sqlite3 /root/deploy/kly-deploy.db <<EOF
 DELETE FROM upgrade_process_status;
 DELETE FROM upgrade_now_status;

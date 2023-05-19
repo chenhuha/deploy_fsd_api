@@ -65,7 +65,7 @@ class DeployHistoryModel:
             return result
         except sqlite3.Error as e:
             self._logger.error(
-                f"Error occurred while getting deployment by uuid: {e}")
+                f"Error occurred while getting deployment {e}")
             return None
         finally:
             conn.close()
