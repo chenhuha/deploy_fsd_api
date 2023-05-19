@@ -106,6 +106,6 @@ function process() {
 }
 
 check_param
-all_process
+# all_process
 process "unzip_upgrade_package" "" true 0 "解压升级包成功"
 deploy_upgrade_program
