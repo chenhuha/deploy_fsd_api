@@ -82,7 +82,7 @@ class Extension(DeployScript, ExtendPreview):
     def _get_upgrade_path(self):
         model = UpgradeHistoryModel()
         update_path = model.get_upgrade_path()
-        if update_path:
+        if update_path[0]:
             return update_path[0]
         return ''
     
