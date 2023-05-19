@@ -26,53 +26,48 @@ class LoadInfoModel:
 
     def first_add_load_info(self, info):
         try:
-            c = self.conn.cursor()
+            conn = sqlite3.connect(self.DB_NAME)
+            c = conn.cursor()
             c.execute("DELETE FROM load_info;")
             c.execute('''
                 INSERT INTO load_info (info) VALUES (?)
             ''', (info,))
             c.close()
-            self.conn.commit()
+            conn.commit()
             self._logger.info("New load_info added successfully")
         except sqlite3.Error as e:
             self._logger.error(
                 f"Error occurred while adding new load_info: {e}")
+        finally:
+            conn.close()
 
-    def add_load_info(self, info):
+    def add_load_info_with_id(self, id, info):
         try:
-            c = self.conn.cursor()
-            c.execute("SELECT * FROM load_info WHERE id = 2")
+            conn = sqlite3.connect(self.DB_NAME)
+            c = conn.cursor()
+            c.execute("SELECT * FROM load_info WHERE id = ?", (id,))
             result = c.fetchone()
             if result:
                 c.execute('''
-                    UPDATE load_info SET info = ? where id = 2
-                ''', (info,))
+                    UPDATE load_info SET info = ? where id = ?
+                ''', (info, id,))
             else:
                 c.execute('''
                     INSERT INTO load_info (info) VALUES (?)
                 ''', (info,))
             c.close()
-            self.conn.commit()
+            conn.commit()
             self._logger.info("New load_info added successfully")
         except sqlite3.Error as e:
             self._logger.error(
                 f"Error occurred while adding new load_info: {e}")
-
-    def get_load_info(self):
-        try:
-            c = self.conn.cursor()
-            c.execute("SELECT info FROM load_info")
-            result = c.fetchone()
-            c.close()
-            return result
-        except sqlite3.Error as e:
-            self._logger.error(
-                f"Error occurred while getting load_info: {e}")
-            return None
+        finally:
+            conn.close()
     
     def get_load_info_with_id(self, id):
         try:
-            c = self.conn.cursor()
+            conn = sqlite3.connect(self.DB_NAME)
+            c = conn.cursor()
             c.execute("SELECT info FROM load_info where id = ?",  (id,))
             result = c.fetchone()
             c.close()
@@ -81,4 +76,6 @@ class LoadInfoModel:
             self._logger.error(
                 f"Error occurred while getting load_info: {e}")
             return None
+        finally:
+            conn.close()
         

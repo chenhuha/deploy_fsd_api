@@ -17,6 +17,7 @@ class Extension(DeployScript, ExtendPreview):
     def __init__(self):
         super().__init__()
         self.extend_history_model = ExtendHistoryModel()
+        self.load_info_model = LoadInfoModel()
 
     def post(self):
         preview_info = self.assembly_data()
@@ -75,6 +76,8 @@ class Extension(DeployScript, ExtendPreview):
             self._write_history_file(results)
             if deploy_result.lower() == 'true':
                 self.deploy_history_model.update_deploy_history_params(results['paramsJson'])
+                info = self._load_storage()
+                self.load_info_model.add_load_info_with_id(1, json.dumps(info))
                 self._write_node_info_csv(previews['nodes'])
                 self.scp_deploy(previews['nodes'])
 
@@ -93,8 +96,7 @@ class Extension(DeployScript, ExtendPreview):
 
     def _load_storage(self):
         try:
-            model = LoadInfoModel()
-            info = model.get_load_info_with_id(2)
-            return json.loads(info)
+            info = self.load_info_model.get_load_info_with_id(2)
+            return json.loads(info[0])
         except Exception:
             return []

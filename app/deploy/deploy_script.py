@@ -179,7 +179,7 @@ class DeployScript(Preview, Node):
         try:
             model = LoadInfoModel()
             info = model.get_load_info_with_id(1)
-            return json.loads(info)
+            return json.loads(info[0])
         except Exception as e:
             return []
 
