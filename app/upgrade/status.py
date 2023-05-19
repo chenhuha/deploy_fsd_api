@@ -1,8 +1,7 @@
-import json
-from models.upgrade_status import UpgradeStatusModel
-
 from common import types
 from deploy.node_base import Node
+from models.upgrade_status import UpgradeStatusModel
+
 from flask_restful import Resource
 
 

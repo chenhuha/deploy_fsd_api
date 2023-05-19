@@ -9,6 +9,7 @@ from extension.preview import ExtendPreview
 from flask import current_app
 from models.upgrade_history import UpgradeHistoryModel
 from models.extend_history import ExtendHistoryModel
+from models.load_info import LoadInfoModel
 from threading import Thread
 
 
@@ -89,3 +90,11 @@ class Extension(DeployScript, ExtendPreview):
         self.extend_history_model.add_extend_history(
             result['paramsJson'], result['log'], result['message'], 
             result['result'], result['startTime'], result['endtime'])
+
+    def _load_storage(self):
+        try:
+            model = LoadInfoModel()
+            info = model.get_load_info_with_id(2)
+            return json.loads(info)
+        except Exception:
+            return []
