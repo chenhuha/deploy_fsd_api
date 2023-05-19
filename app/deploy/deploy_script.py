@@ -178,7 +178,7 @@ class DeployScript(Preview, Node):
     def _load_storage(self):
         try:
             model = LoadInfoModel()
-            info = model.get_load_info()
+            info = model.get_load_info_with_id(1)
             return json.loads(info)
         except Exception as e:
             return []
