@@ -41,7 +41,7 @@ class UpgradeStatusModel:
                 f"Error occurred while creating table upgrade_status: {e}")
         finally:
             conn.close()
-            
+
     def add_upgrade_now_status(self, en, message, result, sort, zh):
         try:
             conn = sqlite3.connect(self.DB_NAME)
@@ -73,7 +73,7 @@ class UpgradeStatusModel:
             self._logger.error(
                 f"Error occurred while getting upgrade_now_status: {e}")
             return None
-        
+
     def get_upgrade_process_status(self):
         try:
             c = self.conn.cursor()
@@ -90,7 +90,8 @@ class UpgradeStatusModel:
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            c.execute("SELECT message, result FROM upgrade_now_status ORDER BY id DESC LIMIT 1;")
+            c.execute(
+                "SELECT message, result FROM upgrade_now_status ORDER BY id DESC LIMIT 1;")
             result = c.fetchone()
             c.close()
             return result

@@ -2,6 +2,7 @@ import logging
 import sqlite3
 from flask import current_app
 
+
 class LoadInfoModel:
     def __init__(self):
         self._logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class LoadInfoModel:
                 f"Error occurred while adding new load_info: {e}")
         finally:
             conn.close()
-    
+
     def get_load_info_with_id(self, id):
         try:
             conn = sqlite3.connect(self.DB_NAME)
@@ -78,4 +79,3 @@ class LoadInfoModel:
             return None
         finally:
             conn.close()
-        

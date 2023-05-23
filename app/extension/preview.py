@@ -2,15 +2,15 @@ import json
 
 from flask import current_app
 from common import types
-
-from models.deploy_history import DeployHistoryModel
 from deploy.preview import Preview
+from models.deploy_history import DeployHistoryModel
+
 
 class ExtendPreview(Preview):
     def __init__(self):
         super().__init__()
         self.deploy_history_model = DeployHistoryModel()
-        
+
     def post(self):
         total_preview = self.assembly_data()
         config_file = self.file_conversion(total_preview)
@@ -20,10 +20,11 @@ class ExtendPreview(Preview):
     def assembly_data(self):
         preview_info = self.get_preview_from_request()
         history_deploy_preview = self.get_deploy_preview_data()
-        total_preview = self.build_extend_request(history_deploy_preview ,preview_info)
+        total_preview = self.build_extend_request(
+            history_deploy_preview, preview_info)
 
         return total_preview
-    
+
     def get(self):
         file_list = ["ceph-globals.yaml", "global_vars.yaml", "hosts"]
         global_vars_data = []
@@ -38,7 +39,8 @@ class ExtendPreview(Preview):
             history_data = self.deploy_history_model.get_deploy_history()
             return json.loads(history_data[1])
         except Exception as e:
-            self._logger.error(f"Get Deploy History file or Get paramsJson in file is filed, Because: {e}")
+            self._logger.error(
+                f"Get Deploy History file or Get paramsJson in file is filed, Because: {e}")
             raise
 
     def build_extend_request(self, deploy_preview, extend_preview):
@@ -50,6 +52,7 @@ class ExtendPreview(Preview):
             deploy_common_preview['voiResourceSize'] += extend_common_preview['voiResourceSize']
             deploy_preview['nodes'].extend(extend_preview['nodes'])
             return deploy_preview
-        except Exception as e :
-            self._logger.error(f"Build total request of historyDeploy and this interface request is failed, Because: {e}")
+        except Exception as e:
+            self._logger.error(
+                f"Build total request of historyDeploy and this interface request is failed, Because: {e}")
             raise

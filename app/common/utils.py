@@ -1,8 +1,7 @@
-from jinja2 import Template
-
 import subprocess, re
+import yaml
 
-import yaml, json
+from jinja2 import Template
 
 # 替换 yaml 文件中的值
 def render_config(filename, data_dirt):

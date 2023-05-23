@@ -41,7 +41,7 @@ class DeployStatusModel:
                 f"Error occurred while creating table status: {e}")
         finally:
             conn.close()
-            
+
     def get_deploy_now_status(self):
         try:
             c = self.conn.cursor()
@@ -53,12 +53,13 @@ class DeployStatusModel:
             self._logger.error(
                 f"Error occurred while getting deploy_now_status: {e}")
             return None
-    
+
     def get_deploy_last_status(self):
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            c.execute("SELECT message, result FROM deploy_now_status ORDER BY id DESC LIMIT 1;")
+            c.execute(
+                "SELECT message, result FROM deploy_now_status ORDER BY id DESC LIMIT 1;")
             result = c.fetchone()
             c.close()
             return result
@@ -68,7 +69,7 @@ class DeployStatusModel:
             return None
         finally:
             conn.close()
-        
+
     def get_deploy_process_status(self):
         try:
             c = self.conn.cursor()
