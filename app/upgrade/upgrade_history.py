@@ -1,11 +1,8 @@
-import os
-import json
-from models.upgrade_history import UpgradeHistoryModel
-
 from common import types
 from deploy.node_base import Node
 from flask import current_app
 from flask_restful import reqparse, Resource
+from models.upgrade_history import UpgradeHistoryModel
 
 
 class UpgradeHistory(Resource, Node):
@@ -60,16 +57,19 @@ class UpgradeHistory(Resource, Node):
         if version:
             history_data = [d for d in history_data if d['version'] == version]
         if new_version:
-            history_data = [d for d in history_data if d['new_version'] == new_version]
+            history_data = [
+                d for d in history_data if d['new_version'] == new_version]
         if start_time and end_time:
-            history_data = [d for d in history_data if d['endtime'] >= start_time and d['endtime'] <= end_time]
+            history_data = [d for d in history_data if d['endtime']
+                            >= start_time and d['endtime'] <= end_time]
         if result is not None:
             result = result.lower() == 'true'
             history_data = [d for d in history_data if d['result'] == result]
 
         # 排序数据
         if sort == 'endtime':
-            history_data = sorted(history_data, key=lambda x: x['endtime'], reverse=True)
+            history_data = sorted(
+                history_data, key=lambda x: x['endtime'], reverse=True)
 
         # 分页数据
         start_index = (page - 1) * size
@@ -91,11 +91,12 @@ class UpgradeHistory(Resource, Node):
         if history_data:
             for data in history_data:
                 result = types.DataModel().history_upgarde_model(
-                    version = data[1],
-                    new_version =  data[2],
-                    result = bool(data[3].lower() == 'true') if data[3] != '' else '',
-                    message = data[4],
-                    endtime = data[5]
+                    version=data[1],
+                    new_version=data[2],
+                    result=bool(data[3].lower() ==
+                                'true') if data[3] != '' else '',
+                    message=data[4],
+                    endtime=data[5]
                 )
                 results.append(result)
 

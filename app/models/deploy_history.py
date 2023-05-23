@@ -2,6 +2,7 @@ import logging
 import sqlite3
 from flask import current_app
 
+
 class DeployHistoryModel:
     def __init__(self):
         self._logger = logging.getLogger(__name__)
@@ -69,12 +70,13 @@ class DeployHistoryModel:
             return None
         finally:
             conn.close()
-    
+
     def update_deploy_history_params(self, params_json):
         try:
             conn = sqlite3.connect(self.DB_NAME)
             c = conn.cursor()
-            c.execute("UPDATE deploy_history SET params_json = ? ", (params_json,))
+            c.execute("UPDATE deploy_history SET params_json = ? ",
+                      (params_json,))
             c.close()
             conn.commit()
             self._logger.info("upgrade_history update successfully")
@@ -90,8 +92,8 @@ class DeployHistoryModel:
             c = conn.cursor()
             c.execute('''
                 DELETE FROM deploy_history;
-            ''')   
-            conn.commit()   
+            ''')
+            conn.commit()
             c.close()
         except sqlite3.Error as e:
             self._logger.error(

@@ -2,6 +2,7 @@ import logging
 import sqlite3
 from flask import current_app
 
+
 class ExtendHistoryModel:
     def __init__(self):
         self._logger = logging.getLogger(__name__)

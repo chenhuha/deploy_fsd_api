@@ -39,7 +39,7 @@ class Upgrade(Resource):
         parser.add_argument('new_version', required=True, type=str, location='json',
                             help='The new_version field does not exist')
         return parser.parse_args()
-    
+
     def start_upgrade(self, app, filename):
         with app.app_context():
             self.unzip_upgade_package(filename)
@@ -48,31 +48,31 @@ class Upgrade(Resource):
     def unzip_upgade_package(self, filename):
         file_path = os.path.join(
             current_app.config['UPGRADE_SAVE_PATH'], filename)
-        
+
         cmd = constants.COMMAND_TAR_UNZIP % (
             file_path, current_app.config['UPGRADE_SAVE_PATH'])
-        
+
         code, result, err = utils.execute(cmd)
         if code != 0:
             self._logger.error(
                 f'unzip file {file_path} Field, Because: {err}')
             self.upgrade_status_model.add_upgrade_now_status(
-                'unzip_upgrade_package', 
-                'Failed to unzip upgrade package' 
+                'unzip_upgrade_package',
+                'Failed to unzip upgrade package'
                 'false', 0, '解压升级包')
             self.upgrade_history_model.add_upgrade_history(
-                self.version, self.new_version, 'false', 
-                'Failed to unzip the upgrade package', 
+                self.version, self.new_version, 'false',
+                'Failed to unzip the upgrade package',
                 int(time.time() * 1000))
             raise
 
         self._logger.info(
             f"Execute command to unzip package '{cmd}', result:{result}")
         self.upgrade_status_model.add_upgrade_now_status(
-            'unzip_upgrade_package', '', 
+            'unzip_upgrade_package', '',
             'true', 0, '解压升级包')
         self.upgrade_history_model.add_upgrade_history(
-            self.version, self.new_version, 'true', 
+            self.version, self.new_version, 'true',
             '', int(time.time() * 1000))
 
     def upgrade_script(self, filename):
@@ -104,14 +104,15 @@ class Upgrade(Resource):
             else:
                 upgrade_message = '升级失败！'
                 upgrade_result = 'false'
-            
-            self._update_history_upgrade_file(upgrade_message, upgrade_result, upgrade_path)
 
-    def _update_history_upgrade_file(self, message, result, upgrade_path = ''):
+            self._update_history_upgrade_file(
+                upgrade_message, upgrade_result, upgrade_path)
+
+    def _update_history_upgrade_file(self, message, result, upgrade_path=''):
         try:
             self.upgrade_history_model.update_upgrade_history(
                 result, message, int(time.time() * 1000), upgrade_path)
-        
+
             if result == 'true':
                 with open('/etc/klcloud-release', 'w') as f:
                     f.write(self.new_version)
@@ -125,7 +126,9 @@ class Upgrade(Resource):
         try:
             _, result, _ = utils.execute(cmd)
         except Exception as e:
-            self._logger.error(f"Failed to execute upgrade_data_init script: {e}")
+            self._logger.error(
+                f"Failed to execute upgrade_data_init script: {e}")
             return
-        
-        self._logger.info('upgrade_data_init command: %s, result: %s', cmd, result)
+
+        self._logger.info(
+            'upgrade_data_init command: %s, result: %s', cmd, result)

@@ -4,7 +4,7 @@ import os
 import shutil
 
 from common import types
-from deploy.net_check import NetCheck,NetCheckCommon
+from deploy.net_check import NetCheck, NetCheckCommon
 from models.deploy_history import DeployHistoryModel
 
 
@@ -30,19 +30,19 @@ class ExtendNetCheck(NetCheck):
             self.write_data_to_excel(node_info_file, data)
         except Exception as e:
             self._logger.error('write data to excel error, %s', e)
-        
+
         return types.DataModel().model(code=0, data=data)
 
     def get_node_load_card_info(self):
         try:
             cards_list = []
             card_data = {
-                "cards":[],
+                "cards": [],
                 "nodeIP": "",
                 "nodeName": ""
-                }
-            
-            model =  DeployHistoryModel()
+            }
+
+            model = DeployHistoryModel()
             history_data = model.get_deploy_history()
             datas_json = json.loads(history_data[1])
             for node in datas_json['nodes']:
@@ -52,7 +52,8 @@ class ExtendNetCheck(NetCheck):
                 cards_list.append(card_data)
             return cards_list
         except Exception as e:
-            self._logger.error(f"Failed to load json ans build cards list file: {e}")
+            self._logger.error(
+                f"Failed to load json ans build cards list file: {e}")
             raise
 
 
@@ -83,5 +84,6 @@ class ExtendNetCheckCommon(ExtendNetCheck, NetCheckCommon):
                 node_card_list.append(node_card_data)
             return node_card_list
         except Exception as e:
-            self._logger.error(f"Get Deploy History file or Get NETCARD in file is filed, Because: {e}")
+            self._logger.error(
+                f"Get Deploy History file or Get NETCARD in file is filed, Because: {e}")
             raise

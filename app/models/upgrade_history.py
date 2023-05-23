@@ -2,6 +2,7 @@ import logging
 import sqlite3
 from flask import current_app
 
+
 class UpgradeHistoryModel:
     def __init__(self):
         self._logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class UpgradeHistoryModel:
                 f"Error occurred while adding new upgrade_history: {e}")
         finally:
             conn.close()
-    
+
     def update_upgrade_history(self, result, message, endtime, upgrade_path):
         try:
             conn = sqlite3.connect(self.DB_NAME)
@@ -84,7 +85,7 @@ class UpgradeHistoryModel:
             return None
         finally:
             conn.close()
-    
+
     def get_upgrade_version(self):
         try:
             conn = sqlite3.connect(self.DB_NAME)

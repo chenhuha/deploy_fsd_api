@@ -1,5 +1,5 @@
 from flask import jsonify
-import time,json
+import time
 
 
 class DataModel:

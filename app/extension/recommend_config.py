@@ -1,6 +1,6 @@
-import os,yaml,json
+import json
 from flask import current_app
-from common import types, utils
+from common import types
 from deploy.recommend_config import ReckRecommendConfigCommon
 from models.deploy_history import DeployHistoryModel
 
@@ -20,7 +20,7 @@ class ExtendReckRecommendConfigCommon(ReckRecommendConfigCommon):
         extend_pg_all = len(nodes) * len(self.ceph_data_storage) * 100
         all_pgs = self.get_deploy_history_pgs() + extend_pg_all
         data = self.common_ceph_storage_data(len(nodes),
-                                                service_type, ceph_copy_num_default, all_pgs)
+                                             service_type, ceph_copy_num_default, all_pgs)
         return types.DataModel().model(code=0, data=data)
 
     def get_deploy_history_pgs(self):
@@ -35,8 +35,10 @@ class ExtendReckRecommendConfigCommon(ReckRecommendConfigCommon):
             pgs = ceph_datas_num * 100
             return pgs
         except Exception as e:
-            self._logger.error(f"Get Deploy History file or Get storages in file is filed, Because: {e}")
+            self._logger.error(
+                f"Get Deploy History file or Get storages in file is filed, Because: {e}")
             raise
+
 
 # 个性化pg计算
 class ExtendShowRecommendConfig(ExtendReckRecommendConfigCommon):
@@ -51,5 +53,5 @@ class ExtendShowRecommendConfig(ExtendReckRecommendConfigCommon):
         extend_pg_all = len(self.ceph_data_storage) * 100
         all_pgs = self.get_deploy_history_pgs() + extend_pg_all
         data = self.common_ceph_storage_data(1,
-                                                service_type, ceph_copy_num_default, all_pgs)
+                                             service_type, ceph_copy_num_default, all_pgs)
         return types.DataModel().model(code=0, data=data)

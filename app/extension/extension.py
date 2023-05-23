@@ -22,7 +22,7 @@ class Extension(DeployScript, ExtendPreview):
     def post(self):
         preview_info = self.assembly_data()
         config_file = self.file_conversion(preview_info)
-        
+
         for config in config_file:
             file_path = os.path.join(
                 current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
@@ -44,16 +44,18 @@ class Extension(DeployScript, ExtendPreview):
             start_time=int(time.time() * 1000),
             endtime=int(time.time() * 1000)
         )
-        
+
         self._write_history_file(results)
         upgrade_path = self._get_upgrade_path()
-        cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/extension.sh', str(ceph_flag), str(upgrade_path)]
+        cmd = ['sh', current_app.config['SCRIPT_PATH'] +
+               '/extension.sh', str(ceph_flag), str(upgrade_path)]
         self._logger.info('extension command: %s', cmd)
         results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         thread = Thread(target=self._shell_return_listen, args=(
-            current_app._get_current_object(), results, previews, int(time.time() * 1000)))
+            current_app._get_current_object(), results, previews,
+            int(time.time() * 1000)))
         thread.start()
-    
+
     def _shell_return_listen(self, app, subprocess_1, previews, start_time):
         with app.app_context():
             subprocess_1.wait()
@@ -75,9 +77,11 @@ class Extension(DeployScript, ExtendPreview):
 
             self._write_history_file(results)
             if deploy_result.lower() == 'true':
-                self.deploy_history_model.update_deploy_history_params(results['paramsJson'])
+                self.deploy_history_model.update_deploy_history_params(
+                    results['paramsJson'])
                 info = self._load_storage()
-                self.load_info_model.add_load_info_with_id(1, json.dumps(info))
+                self.load_info_model.add_load_info_with_id(
+                    1, json.dumps(info))
                 self._write_node_info_csv(previews['nodes'])
                 self.scp_deploy(previews['nodes'])
 
@@ -87,11 +91,11 @@ class Extension(DeployScript, ExtendPreview):
         if update_path[0]:
             return update_path[0]
         return ''
-    
+
     def _write_history_file(self, result):
         self.extend_history_model.create_extend_history_table()
         self.extend_history_model.add_extend_history(
-            result['paramsJson'], result['log'], result['message'], 
+            result['paramsJson'], result['log'], result['message'],
             result['result'], result['startTime'], result['endtime'])
 
     def _load_storage(self):
