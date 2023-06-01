@@ -87,6 +87,7 @@ enable_fsd: true
 enable_btserver: "{% if fsd_deploy_mode == 'vdi' %}false{% else %}true{% endif %}"
 enable_lvm: false
 enable_ceph: "{% if only_deploy_voi | bool or deploy_edu | bool %}false{% else %}true{% endif %}"
+enable_local: false
 
 ##########
 # VOI 配置
@@ -97,7 +98,7 @@ enable_single_net: false
 voi_storage_num: 100
 voi_data_device: "/dev/sda"
 voi_data_directory: "{{ desktop_mount_dir }}"
-
+net_disk_num: 0
 #################
 # Libvirt Options
 #################

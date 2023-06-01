@@ -6,11 +6,9 @@
 # ceph 0有ssd时: bcache_map_list=[{'cache':'/dev/nvme0n1','data':'/dev/sda /dev/sdb /dev/sdc'},{'cache':'/dev/nvme1n1','data':'/dev/sdb /dev/sdc /dev/sdd'}]
 
 [allnodes]
-# 172.27.125.20 hostname=control1 api_interface=enp125s0f0 ceph_public_interface=enp125s0f0 ceph_cluster_interface=enp125s0f0 flat_network_interface="['enp125s0f1']" vlan_network_interface="{'enp125s0f1': '1:100'}" ceph_volume_data="['/dev/vdb','/dev/vdc']" nic_info="['enp125s0f0:172.27.125.20:1100', 'enp125s0f1::0100']"
-# 172.27.125.20 hostname=control2 api_interface=enp125s0f0 ceph_public_interface=enp125s0f0 ceph_cluster_interface=enp125s0f0 flat_network_interface="['enp125s0f1']" vlan_network_interface="{'enp125s0f1': '1:100'}" ceph_volume_data="['/dev/vdb','/dev/vdc']" nic_info="['enp125s0f0:172.27.125.20:1100', 'enp125s0f1::0100']"
 # 172.27.125.20  hostname=control1  api_interface=enp125s0f0  ceph_public_interface=enp125s0f0  ceph_cluster_interface=enp125s0f0  nic_info="['enp125s0f0:172.27.125.20:1011','enp125s0f1:null:0100']" flat_network_interface="['enp125s0f1']"   ceph_volume_data="['/dev/sda','/dev/sdb','/dev/sdc','/dev/sdd']" lvm_pv_device="['/dev/nvme0n1']" vlan_network_interface="{'enp125s0f1':['1:4094']}"
 {% for node in nodes %}
-{{ node.nodeIP }} ansible_ssh_extra_args='-o StrictHostKeyChecking=no' hostname={{ node.nodeName }} api_interface={{ node.managementCard }} ceph_public_interface={{ node.storagePublicCard }} ceph_cluster_interface={{ node.storageClusterCard }} flat_network_interface="{{ node.flatManagementList }}" vlan_network_interface="{{ node.vlanManagementDict }}" ceph_volume_data="{{ node.cephVolumeData }}" bcache_map_list="{{ node.cephVolumeCacheData }}" nic_info="{{ node.nicInfo }}"
+{{ node.nodeIP }} ansible_ssh_extra_args='-o StrictHostKeyChecking=no' hostname={{ node.nodeName }} api_interface={{ node.managementCard }} ceph_public_interface={{ node.storagePublicCard }} ceph_cluster_interface={{ node.storageClusterCard }} flat_network_interface="{{ node.flatManagementList }}" vlan_network_interface="{{ node.vlanManagementDict }}" ceph_volume_data="{{ node.cephVolumeData }}" bcache_map_list="{{ node.cephVolumeCacheData }}" nic_info="{{ node.nicInfo }}" lvm_pv_device="{{ node.lvmVolumeData }}" local_device="{{ node.localVolumeData }}" external_manage_ip={{ node.nodeIP }}
 {% endfor %}
 
 

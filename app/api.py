@@ -43,8 +43,11 @@ if not os.path.isdir(logfile_dir):
     os.mkdir(logfile_dir)
 
 log_format = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-logging.basicConfig(filename=logfile_dir + '/klc-deploy-api.log',
-                    level=logging.DEBUG, format=log_format)
+logging.basicConfig(
+    filename=f'{logfile_dir}/klc-deploy-api.log',
+    level=logging.DEBUG,
+    format=log_format,
+)
 
 # get version
 class Version(Resource):

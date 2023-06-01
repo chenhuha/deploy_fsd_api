@@ -78,12 +78,7 @@ class UpgradeHistory(Resource, Node):
 
         # 格式化数据
         total = len(history_data)
-        data = {
-            'total': total,
-            'history_data': history_result
-        }
-
-        return data
+        return {'total': total, 'history_data': history_result}
 
     def get_upgrade_history(self):
         history_data = self.upgrade_history_model.get_upgrade_all_history()
@@ -93,10 +88,9 @@ class UpgradeHistory(Resource, Node):
                 result = types.DataModel().history_upgarde_model(
                     version=data[1],
                     new_version=data[2],
-                    result=bool(data[3].lower() ==
-                                'true') if data[3] != '' else '',
+                    result=data[3].lower() == 'true' if data[3] != '' else '',
                     message=data[4],
-                    endtime=data[5]
+                    endtime=data[5],
                 )
                 results.append(result)
 

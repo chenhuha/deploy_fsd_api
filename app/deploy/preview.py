@@ -1,4 +1,5 @@
-import yaml, logging
+import yaml
+import logging
 
 from flask import current_app
 from flask_restful import reqparse, Resource
@@ -31,6 +32,7 @@ class Preview(Resource, DeployPreview):
     def post(self):
         preview_info = self.get_preview_from_request()
         config_file = self.file_conversion(preview_info)
+
         return types.DataModel().model(code=0, data=config_file)
 
     def get(self):
@@ -40,64 +42,47 @@ class Preview(Resource, DeployPreview):
             with open(current_app.config['ETC_EXAMPLE_PATH'] + file, 'r') as f:
                 global_vars_data.append({'shellName': file,
                                          'shellContent': f.read()})
+
         return types.DataModel().model(code=0, data=global_vars_data)
 
     def file_conversion(self, previews):
-        # global_var.yml文件预览
+        # 生成 global_vars.yaml 文件预览
         commonFixed = previews['common']['commonFixed']
         commonCustom = previews['common']['commonCustom']
-        commonCustomPool = commonCustom['commonCustomPool']
-        global_var_data = utils.yaml_to_dict(
-            current_app.config['TEMPLATE_PATH'] + '/global_vars.yaml')
+        global_var_data = utils.yaml_to_dict(current_app.config['TEMPLATE_PATH'] + '/global_vars.yaml')
         global_var_data['external_vip_address'] = commonFixed['apiVip']
-        global_var_data['internal_vip_address'] = '169.168' + \
-            '.' + str(commonFixed['apiVip'].split('.', 2)[-1])
-        global_var_data['voi_storage_num'] = commonFixed['voiResourceSize']
-        global_var_data['vdi_storage_num'] = commonFixed['blockStorageSize']
-        global_var_data['cloud_disk_num'] = commonFixed['shareDiskSize']
-        global_var_data['enable_ceph'] = commonFixed['cephServiceFlag']
+        global_var_data['internal_vip_address'] = f"169.168.{commonFixed['apiVip'].split('.', 2)[-1]}"
+        global_var_data['voi_storage_num'] = commonFixed.get('voiResourceSize', 0)
+        global_var_data['vdi_storage_num'] = commonFixed.get('blockStorageSize', 0)
+        global_var_data['cloud_disk_num'] = commonFixed.get('shareDiskSize', 0)
+        global_var_data['net_disk_num'] = commonFixed.get('netDiskSize', 0)
+        global_var_data['enable_ceph'] = commonFixed.get('cephServiceFlag', False)
+        global_var_data['enable_local'] = commonFixed.get('localServiceFlag', False)
+        global_var_data['only_deploy_voi'] = False
+
+        service_type = previews['serviceType']
+        if len(service_type) == 1 and service_type[0] == 'VOI':
+            fsd_deploy_mode = 'voi'
+            global_var_data['only_deploy_voi'] = True
+            global_var_data['voi_data_device'] = self.get_voi_data_device(previews)
+        elif len(service_type) == 1 and service_type[0] == 'VDI':
+            fsd_deploy_mode = 'vdi'
+        else:
+            fsd_deploy_mode = 'all'
+        
+        global_var_data['fsd_deploy_mode'] = fsd_deploy_mode 
+
         if previews['deployType'] == "COMM":
             global_var_data['deploy_comm'] = True
             global_var_data['deploy_edu'] = False
-            if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
-                global_var_data['fsd_deploy_mode'] = 'voi'
-            elif len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VDI":
-                global_var_data['fsd_deploy_mode'] = 'vdi'
-            else:
-                global_var_data['fsd_deploy_mode'] = 'all'
         elif previews['deployType'] == "EASYEDU":
             global_var_data['deploy_comm'] = False
             global_var_data['deploy_edu'] = True
-            global_var_data['fsd_deploy_mode'] = 'all'
-        if len(previews['serviceType']) == 1 and previews['serviceType'][0] == "VOI":
-            global_var_data['only_deploy_voi'] = True
-            voi_storage = self._get_edu_voi_storage(previews)
-            global_var_data['voi_data_device'] =  voi_storage
-        else:
-            global_var_data['only_deploy_voi'] = False
+    
         global_var = yaml.dump(global_var_data, sort_keys=False, width=1200)
-        global_var_dict = {'shellName': 'global_vars.yaml',
-                           'shellContent': global_var}
+        global_var_dict = {'shellName': 'global_vars.yaml', 'shellContent': global_var}
 
-        # ceph_global_var.yml文件预览
-        ceph_global_var_data = utils.yaml_to_dict(
-            current_app.config['TEMPLATE_PATH'] + '/ceph-globals.yaml')
-        ceph_global_var_data['ceph_public_network'] = commonFixed['cephPublic']
-        ceph_global_var_data['ceph_cluster_network'] = commonFixed['cephCluster']
-        ceph_global_var_data['osd_pool_default_size'] = commonCustom['commonCustomCeph']['cephCopyNumDefault']
-        ceph_global_var_data['images_pool_pg_num'] = commonCustomPool['imagePoolPgNum']
-        ceph_global_var_data['images_pool_pgp_num'] = commonCustomPool['imagePoolPgpNum']
-        ceph_global_var_data['volumes_poll_pg_num'] = commonCustomPool['volumePoolPgNum']
-        ceph_global_var_data['volumes_poll_pgp_num'] = commonCustomPool['volumePoolPgpNum']
-        ceph_global_var_data['cephfs_pool_default_pg_num'] = commonCustomPool['cephfsPoolPgNum']
-        ceph_global_var_data['cephfs_pool_default_pgp_num'] = commonCustomPool['cephfsPoolPgpNum']
-        ceph_global_var_data['ceph_aio'] = True if len(previews['nodes']) == 1 else False
-        ceph_global_var_data['bcache'] = self._bcache_bool(previews['nodes'])
-        ceph_global_var = yaml.dump(ceph_global_var_data, sort_keys=False)
-        ceph_global_var_dict = {
-            'shellName': 'ceph-globals.yaml', 'shellContent': ceph_global_var}
-
-        # host 文件预览
+        # 生成 hosts 文件预览
         host_vars = {
             'nodeIP': "",
             'nodeName': "",
@@ -109,36 +94,63 @@ class Preview(Resource, DeployPreview):
             'vlanManagementDict': {},
             'cephVolumeData': [],
             'cephVolumeCacheData': [],
+            'localVolumeData': [],
             'nodeType': []
         }
         nodes_info = []
+
         for node in previews['nodes']:
-            host_vars1 = host_vars.copy()
-            host_vars1['nodeIP'] = node['nodeIP']
-            host_vars1['nodeName'] = node['nodeName']
+            host_vars1 = host_vars | {
+                'nodeIP': node['nodeIP'],
+                'nodeName': node['nodeName'],
+            }
             card_info = self._netcard_classify_build(node['networkCards'])
-            host_vars1['managementCard'] = card_info['management']
-            host_vars1['storagePublicCard'] = card_info['storagePublic']
-            host_vars1['storageClusterCard'] = card_info['storageCluster']
-            host_vars1['nicInfo'] = card_info['nic']
-            host_vars1['flatManagementList'] = card_info['flat_cards']
-            host_vars1['vlanManagementDict'] = card_info['vlan_cards']
             storage_info = self._storage_classify_build(node['storages'])
-            host_vars1['cephVolumeData'] = storage_info['ceph_volume_data']
-            host_vars1['cephVolumeCacheData'] = storage_info['ceph_volume_ceph_data']
-            host_vars1['nodeType'] = node['nodeType']
+
+            host_vars1 |= {
+                'managementCard': card_info['management'],
+                'storagePublicCard': card_info['storagePublic'],
+                'storageClusterCard': card_info['storageCluster'],
+                'nicInfo': card_info['nic'],
+                'flatManagementList': card_info['flat_cards'],
+                'vlanManagementDict': card_info['vlan_cards'],
+                'cephVolumeData': storage_info['ceph_volume_data'],
+                'cephVolumeCacheData': storage_info['ceph_volume_cache_data'],
+                'localVolumeData': storage_info['local_volume_data'],
+                'nodeType': node['nodeType'],
+            }
+
             nodes_info.append(host_vars1)
+
         host_file_print = self.host_conversion({'nodes': nodes_info})
         host_var_dict = {'shellName': 'hosts', 'shellContent': host_file_print}
 
-        return [global_var_dict, ceph_global_var_dict, host_var_dict]
+        if commonFixed.get('cephServiceFlag', False):
+            ceph_global_var_data = utils.yaml_to_dict(current_app.config['TEMPLATE_PATH'] + '/ceph-globals.yaml')
+            ceph_global_var_data['ceph_public_network'] = commonFixed['cephPublic']
+            ceph_global_var_data['ceph_cluster_network'] = commonFixed['cephCluster']
+            ceph_global_var_data['osd_pool_default_size'] = commonCustom['commonCustomCeph']['cephCopyNumDefault']
+            commonCustomPool = commonCustom['commonCustomPool']
+            ceph_global_var_data['images_pool_pg_num'] = commonCustomPool['imagePoolPgNum']
+            ceph_global_var_data['images_pool_pgp_num'] = commonCustomPool['imagePoolPgpNum']
+            ceph_global_var_data['volumes_poll_pg_num'] = commonCustomPool['volumePoolPgNum']
+            ceph_global_var_data['volumes_poll_pgp_num'] = commonCustomPool['volumePoolPgpNum']
+            ceph_global_var_data['cephfs_pool_default_pg_num'] = commonCustomPool['cephfsPoolPgNum']
+            ceph_global_var_data['cephfs_pool_default_pgp_num'] = commonCustomPool['cephfsPoolPgpNum']
+            ceph_global_var_data['ceph_aio'] = len(previews['nodes']) == 1
+            ceph_global_var_data['bcache'] = self._bcache_bool(previews['nodes'])
+            ceph_global_var = yaml.dump(ceph_global_var_data, sort_keys=False)
+            ceph_global_var_dict = {'shellName': 'ceph-globals.yaml', 'shellContent': ceph_global_var}
+
+            return [global_var_dict, ceph_global_var_dict, host_var_dict]
+
+        return [global_var_dict, host_var_dict]
 
     def host_conversion(self, nodes):
         host_template_path = current_app.config['TEMPLATE_PATH'] + '/hosts.j2'
         with open(host_template_path, 'r', encoding='UTF-8') as f:
             data = f.read()
-        vars = Template(data).render(nodes)
-        return vars
+        return Template(data).render(nodes)
 
     def _bcache_bool(self, nodes):
         bcache = False
@@ -158,65 +170,76 @@ class Preview(Resource, DeployPreview):
             'storagePublic': "",
             'nic': []
         }
-        card_nic_dict = {
-            'name': "",
-            'role': 0,
-            'salve': ""
-        }
-        cards_nic_list = []
+
         for card in cards:
-            card_nic = card_nic_dict.copy()
-            card_nic['name'] = card['name']
-            if 'EXTRANET' in card['purpose']:
-                card_nic['role'] += 4
-                if card.get('flat'):
-                    card_info['flat_cards'].append(card['name'])
-                if card.get('vlan'):
-                    card_info['vlan_cards'][card['name']] = card['externalIds']
-            if 'MANAGEMENT' in card['purpose']:
-                card_nic['role'] += 8
-                card_info['management'] = card['name']
-            if 'STORAGECLUSTER' in card['purpose']:
-                card_nic['role'] += 2
-                card_info['storageCluster'] = card['name']
-            if 'STORAGEPUBLIC' in card['purpose']:
-                card_nic['role'] += 1
-                card_info['storagePublic'] = card['name']
-            if card['bond']:
-                card_nic['salve'] = card['slaves']
-            cards_nic_list.append(card_nic)
-        for cards_nic in cards_nic_list:
-            if cards_nic['role'] != 0:
-                if cards_nic['salve'] == '':
-                    card_info['nic'].append("{}:null:{}".format(
-                        cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4))))
-                else:
-                    card_info['nic'].append("{}:null:{}:{}".format(
-                        cards_nic['name'], str(bin(cards_nic['role'])[2:].zfill(4)), cards_nic['salve']))
+            name = card['name']
+            purpose = card['purpose']
+            bond = card['bond']
+            slaves = card['slaves']
+            external_ids = card.get('externalIds')
+
+            if 'EXTRANET' in purpose:
+                card_info['flat_cards'].append(name)
+                if external_ids:
+                    card_info['vlan_cards'][name] = external_ids
+
+            if 'MANAGEMENT' in purpose:
+                card_info['management'] = name
+
+            if 'STORAGECLUSTER' in purpose:
+                card_info['storageCluster'] = name
+
+            if 'STORAGEPUBLIC' in purpose:
+                card_info['storagePublic'] = name
+
+            role = 0
+
+            if 'EXTRANET' in purpose:
+                role += 4
+
+            if 'MANAGEMENT' in purpose:
+                role += 8
+
+            if 'STORAGECLUSTER' in purpose:
+                role += 2
+
+            if 'STORAGEPUBLIC' in purpose:
+                role += 1
+
+            if bond:
+                nic = f"{name}:null:{str(bin(role)[2:].zfill(4))}:{slaves}" if slaves else f"{name}:null:{str(bin(role)[2:].zfill(4))}"
+            else:
+                nic = f"{name}:null:{str(bin(role)[2:].zfill(4))}"
+
+            if role != 0:
+                card_info['nic'].append(nic)
 
         return card_info
 
     def _storage_classify_build(self, storages):
         storage_data = {
             'ceph_volume_data': [],
-            'ceph_volume_ceph_data': []
+            'ceph_volume_cache_data': [],
+            'local_volume_data': []
         }
+
         for storage in storages:
-            if storage['purpose'] == 'DATA':
-                storage_data['ceph_volume_data'].append(
-                    '/dev/' + storage['name'])
-            elif storage['purpose'] == 'CACHE':
-                storage['cache2data'] = [
-                    '/dev/' + item for item in storage['cache2data']]
-                storage_data['ceph_volume_ceph_data'].append(
-                    {'cache': '/dev/' + storage['name'], 'data': ' '.join(storage['cache2data'])})
+            purpose = storage['purpose']
+            disk_name = '/dev/' + storage['name']
+
+            if purpose == 'CEPH_CACHE':
+                cache2data = [f'/dev/{item}' for item in storage['cache2data']]
+                storage_data['ceph_volume_cache_data'].append({'cache': disk_name, 'data': ' '.join(cache2data)})
+            elif purpose == 'CEPH_DATA':
+                storage_data['ceph_volume_data'].append(disk_name)
+            elif purpose == 'LOCAL_DATA':
+                storage_data['local_volume_data'].append(disk_name)
+
         return storage_data
 
-    def _get_edu_voi_storage(self,previews):
-        storage_name = ""
+    def get_voi_data_device(self, previews):
         for node in previews['nodes']:
             for storage in node['storages']:
                 if storage['purpose'] == 'VOIDATA':
-                    storage_name = '/dev/' + storage['name']
-                    break
-        return storage_name
+                    return '/dev/' + storage['name']
+        return ""

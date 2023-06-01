@@ -27,9 +27,8 @@ class ExtendNodeLoad(NodeLoad):
         return types.DataModel().model(code=0, data=data)
 
     def get_deploy_node_load_info(self):
-        info = self.model.get_load_info_with_id(1)
-        if info:
-            data = json.loads(info[0])
-        else:
-            data = []
-        return data
+        return (
+            json.loads(info[0])
+            if (info := self.model.get_load_info_with_id(1))
+            else []
+        )

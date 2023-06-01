@@ -1,21 +1,23 @@
-import os
 import json
-import yaml
+import os
+import shutil
 import subprocess
 import time
-import shutil
-from openpyxl import load_workbook
-from common import types, utils, constants
-from deploy.preview import Preview
-from flask import current_app
-from uuid import uuid1
 from threading import Thread
+from uuid import uuid1
+
+import yaml
+from flask import current_app
+from openpyxl import load_workbook
+
+from common import constants, types, utils
 from deploy.node_base import Node
+from deploy.preview import Preview
 from models.deploy_history import DeployHistoryModel
-from models.load_info import LoadInfoModel
-from models.upgrade_history import UpgradeHistoryModel
 from models.deploy_status import DeployStatusModel
 from models.extend_history import ExtendHistoryModel
+from models.load_info import LoadInfoModel
+from models.upgrade_history import UpgradeHistoryModel
 
 
 class DeployScript(Preview, Node):
@@ -46,7 +48,7 @@ class DeployScript(Preview, Node):
                 current_app.config['ETC_EXAMPLE_PATH'], config['shellName'])
             with open(file_path, 'w', encoding='UTF-8') as f:
                 f.write(config['shellContent'])
-        self.control_deploy(preview_info)
+        # self.control_deploy(preview_info)
         return types.DataModel().model(code=0, data="")
 
     def control_deploy(self, previews):
@@ -65,8 +67,14 @@ class DeployScript(Preview, Node):
         )
         self._write_history_file(results)
         self._create_status_table()
-        cmd = ['sh', current_app.config['SCRIPT_PATH'] + '/setup.sh',
-               deploy_key, deploy_type, str(ceph_flag), str(deploy_uuid)]
+        cmd = [
+            'sh',
+            current_app.config['SCRIPT_PATH'] + '/setup.sh',
+            deploy_key,
+            deploy_type,
+            str(ceph_flag),
+            deploy_uuid,
+        ]
         self._logger.info('deploy command: %s', cmd)
         results = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         thread = Thread(target=self._shell_return_listen, args=(
@@ -85,8 +93,7 @@ class DeployScript(Preview, Node):
     def _shell_return_listen(self, app, subprocess_1, previews, deploy_uuid, start_time):
         with app.app_context():
             subprocess_1.wait()
-            status = self.deploy_status_model.get_deploy_last_status()
-            if status:
+            if status := self.deploy_status_model.get_deploy_last_status():
                 deploy_message = status[0]
                 deploy_result = status[1]
             else:
