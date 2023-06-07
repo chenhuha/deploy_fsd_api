@@ -60,11 +60,9 @@ class UpgradeStatus(Resource, Node):
         return status_list
 
     def data_format(self):
-        data = {
+        return {
             "processList": self.process_list,
             "nowList": self.now_list,
             "isEnd": self.get_is_end(),
-            "uuId": ""
+            "uuId": "",
         }
-
-        return data

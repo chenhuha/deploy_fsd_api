@@ -12,16 +12,15 @@ class ExtendHistory(Resource):
         return types.DataModel().model(code=0, data=data)
     
     def get_extend_history(self):
-        history_data = self.extend_history_model.get_extend_history()
-        if history_data:
-            results = types.DataModel().history_extend_model(
+        return (
+            types.DataModel().history_extend_model(
                 history_data[1],
                 history_data[2],
                 history_data[3],
-                bool(history_data[4].lower() == 'true') if history_data[5] != '' else '',
+                history_data[4].lower() == 'true' if history_data[5] != '' else '',
                 history_data[5],
-                history_data[6])
-        else:
-            results = []
-            
-        return results
+                history_data[6],
+            )
+            if (history_data := self.extend_history_model.get_extend_history())
+            else []
+        )

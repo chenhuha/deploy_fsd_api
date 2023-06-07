@@ -59,8 +59,7 @@ class Extension(DeployScript, ExtendPreview):
     def _shell_return_listen(self, app, subprocess_1, previews, start_time):
         with app.app_context():
             subprocess_1.wait()
-            status = self.deploy_status_model.get_deploy_last_status()
-            if status:
+            if status := self.deploy_status_model.get_deploy_last_status():
                 deploy_message = status[0]
                 deploy_result = status[1]
             else:
@@ -88,9 +87,7 @@ class Extension(DeployScript, ExtendPreview):
     def _get_upgrade_path(self):
         model = UpgradeHistoryModel()
         update_path = model.get_upgrade_path()
-        if update_path[0]:
-            return update_path[0]
-        return ''
+        return update_path[0] if update_path[0] else ''
 
     def _write_history_file(self, result):
         self.extend_history_model.create_extend_history_table()

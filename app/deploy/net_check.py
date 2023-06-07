@@ -401,9 +401,4 @@ class NetCheckCommon(NetCheck):
 
     def load_storage(self):
         model = LoadInfoModel()
-        info = model.get_load_info_with_id(1)
-        if info:
-            data  = json.loads(info[0])
-        else:
-            data = []
-        return data
+        return json.loads(info[0]) if (info := model.get_load_info_with_id(1)) else []

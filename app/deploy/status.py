@@ -65,13 +65,11 @@ class Status(Resource, Node):
         return status_list
 
     def data_format(self, key):    
-        data = {
+        return {
             "processList": self.process_list,
             "nowList": self.now_list,
             "isEnd": self.get_is_end(),
             "key": key,
-            "uuId": ""
+            "uuId": "",
         }
-
-        return data
     

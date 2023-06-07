@@ -79,8 +79,11 @@ class Upgrade(Resource):
         upgrade_file = os.path.splitext(os.path.splitext(filename)[0])[0]
         upgrade_path = os.path.join(
             current_app.config['UPGRADE_SAVE_PATH'], upgrade_file)
-        cmd = ['sh', os.path.join(
-            upgrade_path + '/kly-deploy-api/scripts', 'upgrade.sh'), upgrade_path]
+        cmd = [
+            'sh',
+            os.path.join(f'{upgrade_path}/kly-deploy-api/scripts', 'upgrade.sh'),
+            upgrade_path,
+        ]
 
         try:
             results = subprocess.Popen(cmd, stdout=subprocess.PIPE)

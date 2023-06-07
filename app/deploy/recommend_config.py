@@ -6,80 +6,101 @@ from flask_restful import reqparse, Resource
 class DeployCount(Node):
     def get_nodes_from_request(self):
         parser = reqparse.RequestParser()
-        parser.add_argument('cephCopyNumDefault', required=True, location='json',
-                            type=int, help='The cephCopyNumDefault field does not exist')
-        parser.add_argument('nodes', required=True, location='json',
-                            type=list, help='The nodes field does not exist')
-        parser.add_argument('serviceType', required=True, location='json',
-                            type=list, help='The serviceType field does not exist')
-        parser.add_argument('storages', location='json',
-                            type=list, help='The storages field does not exist')
+        fields = [
+            ('cephCopyNumDefault', int, True, 'The cephCopyNumDefault field does not exist'),
+            ('cephServiceFlag', bool, True, 'The cephServiceFlag field does not exist'),
+            ('localServiceFlag', bool, True, 'The localServiceFlag field does not exist'),
+            ('nodes', list, True, 'The nodes field does not exist'),
+            ('serviceType', list, True, 'The serviceType field does not exist'),
+            ('storages', list, False, 'The storages field does not exist')
+        ]
+        
+        for field, field_type, required, error_msg in fields:
+            parser.add_argument(field, required=required, location='json', type=field_type, help=error_msg)
+
         return parser.parse_args()
 
+
+
 # 通用pg计算
-
-
 class ReckRecommendConfigCommon(Resource, DeployCount):
     def __init__(self):
-        self.voi_storage = {}
-        self.sys_storage = {}
-        self.ceph_data_storage = []
         self.ceph_cache_storage = []
+        self.ceph_data_storage = []
+        self.local_storage = []
+        self.sys_storage = None
+        self.voi_storage = None
 
     def post(self):
         nodes_info = self.get_nodes_from_request()
-        ceph_copy_num_default = nodes_info["cephCopyNumDefault"]
-        service_type = nodes_info["serviceType"]
-        nodes = nodes_info["nodes"]
-        storage_list = nodes_info["storages"]
-        self.disk_classification(storage_list)
-        if len(nodes) == 1 and len(self.ceph_data_storage) == 1:
-            ceph_copy_num_default = 1
+        ceph_copy_num_default = nodes_info['cephCopyNumDefault']
+        ceph_service_flag = nodes_info['cephServiceFlag']
+        local_service_flag = nodes_info['localServiceFlag']
 
-        if len(service_type) == 1 and service_type[0] == "VOI":
-            only_voi_storage = self.common_voi_storage_count()
-            return types.DataModel().model(code=0, data=self.build_data({}, {}, storageSizeMax=only_voi_storage))
-        else:
-            pg_all = len(nodes) * len(self.ceph_data_storage) * 100
-            data = self.common_ceph_storage_data(len(nodes),
-                                                 service_type, ceph_copy_num_default, pg_all)
+        service_type = nodes_info['serviceType']
+        nodes = nodes_info['nodes']
+        storage_list = nodes_info.get('storages', [])
+        self.classify_disks(storage_list)
+
+        if self.should_calculate_only_voi(service_type):
+            data = {'storageSizeMax': self.calculate_only_voi_storage()}
             return types.DataModel().model(code=0, data=data)
 
-    # 磁盘类型分类，VOI只支持一个盘
-    def disk_classification(self, storage_list):
+        data = {} 
+        if ceph_service_flag:
+            if len(nodes) == 1 and len(self.ceph_data_storage) == 1:
+                ceph_copy_num_default = 1
+            pg_all = len(nodes) * len(self.ceph_data_storage) * 100
+            data = self.calculate_ceph_storage(
+                len(nodes), service_type, ceph_copy_num_default, pg_all)
+
+        if local_service_flag:
+            data['localSizeMax'] = self.calculate_local_storage(len(nodes))
+
+        return types.DataModel().model(code=0, data=data)
+
+    def classify_disks(self, storage_list):
         for storage in storage_list:
-            if storage['purpose'] == 'VOIDATA':
-                self.voi_storage = storage
-            if storage['purpose'] == 'SYSTEM':
-                self.sys_storage = storage
-            if storage['purpose'] == 'DATA':
-                self.ceph_data_storage.append(storage)
-            if storage['purpose'] == 'CACHE':
+            purpose = storage['purpose']
+            if purpose == 'CEPH_CACHE':
                 self.ceph_cache_storage.append(storage)
+            elif purpose == 'CEPH_DATA':
+                self.ceph_data_storage.append(storage)
+            elif purpose == 'LOCAL_DATA':
+                self.local_storage.append(storage)
+            elif purpose == 'SYSTEM':
+                self.sys_storage = storage
+            elif purpose == 'VOIDATA':
+                self.voi_storage = storage
 
-    # voi 没有data盘时，使用系统盘-100G
-    def common_voi_storage_count(self):
-        if not self.voi_storage:
-            sys_storage_num = utils.storagetypeformat(self.sys_storage['size'])
-            return str(sys_storage_num - 100) + 'GB'
-        else:
-            return str(utils.storagetypeformat(self.voi_storage['size'])) + 'GB'
+    def should_calculate_only_voi(self, service_type):
+        return len(service_type) == 1 and service_type[0] == "VOI"
 
-    def common_ceph_storage_data(self, node_num, service_type, ceph_copy_num_default, pg_all):
-        image_pgp = 0.1
+    def calculate_only_voi_storage(self):
+        if self.voi_storage:
+            return str(utils.storage_type_format(self.voi_storage['size'])) + 'GB'
+        sys_storage_size = utils.storage_type_format(self.sys_storage['size'])
+        return f'{str(sys_storage_size - 100)}GB'
+
+    def calculate_ceph_storage(self, node_num, service_type, ceph_copy_num_default, pg_all):
         volume_pgp = 0.45
         cephfs_pgp = 0.45
+
         if len(service_type) == 1 and service_type[0] == "VDI":
             volume_pgp = 0.8
             cephfs_pgp = 0.1
-        images_pool = utils.getNearPower(
+
+        image_pgp = 0.1
+        images_pool = utils.get_near_power(
             int(pg_all * image_pgp / ceph_copy_num_default))
-        volume_pool = utils.getNearPower(
+        volume_pool = utils.get_near_power(
             int(pg_all * volume_pgp / ceph_copy_num_default))
-        cephfs_pool = utils.getNearPower(
+        cephfs_pool = utils.get_near_power(
             int(pg_all * cephfs_pgp / ceph_copy_num_default))
-        ceph_max_size = str(
-            round(self.common_ceph_storage_size() * 0.8, 2) * node_num / ceph_copy_num_default) + 'GB'
+        ceph_data_sum = sum(utils.storage_type_format(
+            storage['size']) for storage in self.ceph_data_storage)
+        ceph_max_size = f'{str(round(ceph_data_sum * 0.8 * node_num / ceph_copy_num_default, 2) )}GB'
+
         return {
             "commonCustomCeph": {
                 "cephCopyNumDefault": ceph_copy_num_default
@@ -95,32 +116,40 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
             "storageSizeMax": ceph_max_size
         }
 
-    def common_ceph_storage_size(self):
-        size = 0
-        for storage in self.ceph_data_storage:
-            size += utils.storagetypeformat(storage['size'])
-        return size
-
-    def build_data(self, commonCustomCeph, commonCustomPool, storageSizeMax):
-        return {'commonCustomCeph': commonCustomCeph, 'commonCustomPool': commonCustomPool, 'storageSizeMax': storageSizeMax}
+    def calculate_local_storage(self, node_num):
+        if self.local_storage:
+            local_data_sum = sum(utils.storage_type_format(
+                storage['size']) for storage in self.local_storage)
+            return f'{str(local_data_sum * node_num)}GB'
+        
+        sys_storage_size = utils.storage_type_format(self.sys_storage['size'])
+        return f'{str(round(sys_storage_size - 200, 2))}GB'
 
 # 个性化pg计算
 class ShowRecommendConfig(ReckRecommendConfigCommon):
     def post(self):
         nodes_info = self.get_nodes_from_request()
         ceph_copy_num_default = nodes_info["cephCopyNumDefault"]
+        ceph_service_flag = nodes_info['cephServiceFlag']
+        local_service_flag = nodes_info['localServiceFlag']
         service_type = nodes_info["serviceType"]
         nodes = nodes_info["nodes"]
         for node in nodes:
-            self.disk_classification(node['storages'])
-        if len(nodes) == 1 and len(self.ceph_data_storage) == 1:
-            ceph_copy_num_default = 1
+            self.classify_disks(node['storages'])
 
-        if len(service_type) == 1 and service_type[0] == "VOI":
-            only_voi_storage = self.common_voi_storage_count()
-            return types.DataModel().model(code=0, data=self.build_data({}, {}, storageSizeMax=only_voi_storage))
-        else:
-            pg_all = len(self.ceph_data_storage) * 100
-            data = self.common_ceph_storage_data(1,
-                                                 service_type, ceph_copy_num_default, pg_all)
+        if self.should_calculate_only_voi(service_type):
+            data = {'storageSizeMax': self.calculate_only_voi_storage()}
             return types.DataModel().model(code=0, data=data)
+
+        data = {} 
+        if ceph_service_flag:
+            if len(nodes) == 1 and len(self.ceph_data_storage) == 1:
+                ceph_copy_num_default = 1
+            pg_all = len(nodes) * len(self.ceph_data_storage) * 100
+            data = self.calculate_ceph_storage(
+                len(nodes), service_type, ceph_copy_num_default, pg_all)
+
+        if local_service_flag:
+            data['localSizeMax'] = self.calculate_local_storage(1)
+
+        return types.DataModel().model(code=0, data=data)
