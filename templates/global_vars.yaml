@@ -8,15 +8,15 @@ docker_image_tag: latest
 config_directory: "/etc/klcloud"
 
 #部署通用版或者教育版,只能开一个
-deploy_edu: false
-deploy_comm: true
+deploy_edu: true
+deploy_comm: false
 
 ###############
 # Global Config
 ###############
 # 默认预留内存和 CPU
-internal_vip_address: 172.18.29.212
-external_vip_address: 172.27.123.251
+internal_vip_address: 169.168.134.251
+external_vip_address: 172.27.134.251
 api_interface_address: '{{ "api" | filter_address }}'
 network_address_family: "ipv4"
 api_address_family: "{{ network_address_family }}"
@@ -41,7 +41,7 @@ ipmi_username: root
 ipmi_password: Troila12#$
 host_username: root
 host_password: Troila12#$
-create_swap_file: false
+create_swap_file: true
 swap_file_path: /swapfile
 swap_file_block_size: 2M
 swap_file_true: 10240
@@ -51,7 +51,7 @@ vm_swappiness: 0
 # Docker options
 ####################
 # Valid options are [ no, on-failure, always, unless-stopped ]
-docker_restart_policy: "unless-stopped"
+docker_restart_policy: "always"
 # '0' means unlimited retries (applies only to 'on-failure' policy)
 docker_restart_policy_retry: "10"
 # Timeout after Docker sends SIGTERM before sending SIGKILL.
@@ -73,32 +73,42 @@ enable_destroy_images: false
 # role开关
 ##########
 enable_baremetal: true
-enable_haproxy: "{% if deploy_edu | bool %}false{% else %}true{% endif %}"
-enable_keepalived: '{% if deploy_edu | bool or groups["keepalived"] | length == 1 %}false{% else %}true{% endif %}'
+enable_haproxy: true 
+enable_keepalived: '{% if groups["keepalived"] | length == 1 %}false{% else %}true{% endif %}'
 enable_mariadb: true
 enable_redis: true
 enable_emqx: true
 enable_libvirt: true
 enable_trochilus: true
 enable_prometheus: true
-enable_pushgateway: "{% if deploy_edu | bool or only_deploy_voi | bool %}false{% else %}true{% endif %}"
-enable_guest_service: "{% if deploy_edu | bool or only_deploy_voi | bool %}false{% else %}true{% endif %}"
+enable_pushgateway: "{% only_deploy_voi | bool %}false{% else %}true{% endif %}"
+enable_guest_service: "{% if only_deploy_voi | bool %}false{% else %}true{% endif %}"
 enable_fsd: true
 enable_btserver: "{% if fsd_deploy_mode == 'vdi' %}false{% else %}true{% endif %}"
 enable_lvm: false
-enable_ceph: "{% if only_deploy_voi | bool or deploy_edu | bool %}false{% else %}true{% endif %}"
-enable_local: false
+enable_ceph: false
+# 本地存储
+enable_local: true
+enable_glusterfs: '{% if enable_local | bool and groups["glusterfs"] | length > 1 and enable_ceph | bool == false %}true{% else %}false{% endif %}'
 
 ##########
 # VOI 配置
 ##########
-only_deploy_voi: true
+only_deploy_voi: false
 # voi单网卡部署开关
 enable_single_net: false
-voi_storage_num: 100
-voi_data_device: "/dev/sda"
-voi_data_directory: "{{ desktop_mount_dir }}"
-net_disk_num: 0
+single_net_bridge_name: br0
+vpair_tap_name: klcloud-br
+vtap_name: klcloud-vpc
+
+#############
+# local 配置
+#############
+local_vg_name: local
+local_trochilus_lv_name: trochilus
+local_net_lv_name: net
+share_mount_dir: "/opt/share"
+
 #################
 # Libvirt Options
 #################
@@ -106,8 +116,13 @@ ceph_rbd_secret_uuid: e2338e01-6f82-4236-885b-056847028c77
 ceph_rbd_admin_user: client.admin
 hugepages_size: 2M
 enable_hugepages: "{% if only_deploy_voi | bool or deploy_edu | bool %}false{% else %}true{% endif %}"
-libvirt_tag: 2.0.2
-guest_service_tag: 2.0.2
+libvirt_tag: 2.0.3
+guest_service_tag: 2.0.3
+coredump_img_file_path: /opt/coredump
+coredump_libvirt_path: /opt/coredump_file
+coredump_block_size: 1024M
+coredump_count: 20
+coredump_loop_device_name: /dev/loop0
 
 #################
 # Haproxy Options
@@ -192,7 +207,7 @@ trochilus_external_agent_listen_port: 9002
 trochilus_internal_agent_listen_port: 19002
 trochilus_base_path: "{{ desktop_mount_dir }}"
 trochilus_voi_base_path: "{{ desktop_mount_dir }}/voi"
-trochilus_tag: 2.0.2
+trochilus_tag: 2.0.3
 virt_v2v_tag: latest
 # 如果vdi盒子和管理网不在同一个网段，就填管理网网关ip。如果vdi盒子和管理网在同一个网段，就啥也不填
 trochilus_detected_mgmt_net_ip: ""
@@ -200,6 +215,8 @@ trochilus_ha_base_dir_path: /etc/trochilus/ha
 trochilus_dhcp_confs: /etc/trochilus/dhcp
 trochilus_enable_reserved_core: false
 trochilus_reserved_cores_num: 2
+trochilus_cpu_weight_multiplier: 100
+trochilus_memory_weight_multiplier: 1
 trochilus_mariadb_username: trochilus
 trochilus_mariadb_password: fe7f93ca2af34f3aa85cd9f0b66b9896
 trochilus_mariadb_dataname: trochilus
@@ -225,7 +242,7 @@ fsd_external_main_port: 9010
 fsd_internal_main_port: 19010
 fsd_ssd_port: 22222
 fsd_webhook_token: abc123
-fsd_default_tag: 2.0.2
+fsd_default_tag: 2.0.3
 fsd_console_tag: latest
 fsd_deploy_mode: all
 fsd_deploy_node_type: '{% if groups["fsd"] | length > 1 %}cluster{% else %}single{% endif %}'
@@ -233,10 +250,6 @@ fsd_share_root_path: "{{ desktop_mount_dir }}"
 fsd_cloud_disk_root_path: "{{ fsd_share_root_path }}/111"
 proxy_ip: ""
 vdi_desktop_num: 10000
-#上传iso占用空间 通用版需要
-vdi_file_storage_num: 500
-vdi_storage_num: 1000
-cloud_disk_num: 1000
 # 平台配置的码率范围，默认1,100
 fsd_policy_codeRateRange: 1,100
 fsd_biz_parameter_appSize: 1024
@@ -247,10 +260,10 @@ fsd_biz_parameter_appSize: 1024
 fsd_voi_version: edu
 
 tdesktop_path_name: 
-  - /opt/offline/Tdesktop-app-ubu-x86-64_v2.0.2.n001_20230426-release.deb
-  - /opt/offline/Tdesktop-app-uos-x86-64_v2.0.2.n001_20230426-release.deb
-  - /opt/offline/Tdesktop-app-win-x86-64_v2.0.2.n001_20230426-release.exe
-  - /opt/offline/tdesktop-dingsheng-rk3568_v2.0.2.n001_20230426-release.apk
+#  - /opt/offline/Tdesktop-app-ubu-x86-64_v2.0.2.n001_20230426-release.deb
+  - /opt/offline/UOS_X86-TDesktop.deb
+  - /opt/offline/Win-TDesktop.exe
+#  - /opt/offline/tdesktop-dingsheng-rk3568_v2.0.2.n001_20230426-release.apk
 
 
 ##################
@@ -272,4 +285,10 @@ bt_download_external_port_end: 6889
 bt_download_internal_port_end: 16889
 btserver_external_listen_ports: "{{ bt_download_external_port_start }}-{{ bt_download_external_port_end }}"
 btserver_internal_listen_ports: "{{ bt_download_internal_port_start }}-{{ bt_download_internal_port_end }}"
-btserver_tag: 2.0.2
+btserver_tag: 2.0.3
+
+###################
+# glusterfs 
+###################
+gluster_metadata_path: "/data"
+share_metadata_path: "{{ gluster_metadata_path }}/share_data"

@@ -21,7 +21,6 @@ class DeployCount(Node):
         return parser.parse_args()
 
 
-
 # 通用pg计算
 class ReckRecommendConfigCommon(Resource, DeployCount):
     def __init__(self):
@@ -29,7 +28,6 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
         self.ceph_data_storage = []
         self.local_storage = []
         self.sys_storage = None
-        self.voi_storage = None
 
     def post(self):
         nodes_info = self.get_nodes_from_request()
@@ -43,7 +41,7 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
         self.classify_disks(storage_list)
 
         if self.should_calculate_only_voi(service_type):
-            data = {'storageSizeMax': self.calculate_only_voi_storage()}
+            data = {'storageSizeMax': self.calculate_local_storage()}
             return types.DataModel().model(code=0, data=data)
 
         data = {} 
@@ -70,17 +68,9 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
                 self.local_storage.append(storage)
             elif purpose == 'SYSTEM':
                 self.sys_storage = storage
-            elif purpose == 'VOIDATA':
-                self.voi_storage = storage
 
     def should_calculate_only_voi(self, service_type):
         return len(service_type) == 1 and service_type[0] == "VOI"
-
-    def calculate_only_voi_storage(self):
-        if self.voi_storage:
-            return str(utils.storage_type_format(self.voi_storage['size'])) + 'GB'
-        sys_storage_size = utils.storage_type_format(self.sys_storage['size'])
-        return f'{str(sys_storage_size - 100)}GB'
 
     def calculate_ceph_storage(self, node_num, service_type, ceph_copy_num_default, pg_all):
         volume_pgp = 0.45
@@ -113,17 +103,18 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
                 "volumePoolPgNum": volume_pool,
                 "volumePoolPgpNum": volume_pool
             },
-            "storageSizeMax": ceph_max_size
+            "cephSizeMax": ceph_max_size
         }
 
-    def calculate_local_storage(self, node_num):
+    def calculate_local_storage(self):
         if self.local_storage:
             local_data_sum = sum(utils.storage_type_format(
                 storage['size']) for storage in self.local_storage)
-            return f'{str(local_data_sum * node_num)}GB'
+            return f'{str(local_data_sum )}GB'
         
         sys_storage_size = utils.storage_type_format(self.sys_storage['size'])
         return f'{str(round(sys_storage_size - 200, 2))}GB'
+
 
 # 个性化pg计算
 class ShowRecommendConfig(ReckRecommendConfigCommon):
@@ -138,7 +129,7 @@ class ShowRecommendConfig(ReckRecommendConfigCommon):
             self.classify_disks(node['storages'])
 
         if self.should_calculate_only_voi(service_type):
-            data = {'storageSizeMax': self.calculate_only_voi_storage()}
+            data = {'localSizeMax': self.calculate_local_storage()}
             return types.DataModel().model(code=0, data=data)
 
         data = {} 
@@ -150,6 +141,21 @@ class ShowRecommendConfig(ReckRecommendConfigCommon):
                 len(nodes), service_type, ceph_copy_num_default, pg_all)
 
         if local_service_flag:
-            data['localSizeMax'] = self.calculate_local_storage(1)
+            data['localSizeMax'] = self.calculate_node_local_storage(nodes)
 
         return types.DataModel().model(code=0, data=data)
+
+    def calculate_node_local_storage(self, nodes):
+        if self.local_storage:
+            node_local_info = []
+            for node in nodes:
+                local_size = 0
+                for storage in node['storages']:
+                    if storage['purpose'] == 'LOCAL_DATA':
+                            local_size =  local_size + utils.storage_type_format(storage['size'])
+
+                node_local_info.append(f'{local_size}GB' )
+            return node_local_info
+
+        sys_storage_size = utils.storage_type_format(self.sys_storage['size'])
+        return f'{str(round(sys_storage_size - 200, 2))}GB'
