@@ -52,10 +52,6 @@ class Preview(Resource, DeployPreview):
         global_var_data = utils.yaml_to_dict(current_app.config['TEMPLATE_PATH'] + '/global_vars.yaml')
         global_var_data['external_vip_address'] = commonFixed['apiVip']
         global_var_data['internal_vip_address'] = f"169.168.{commonFixed['apiVip'].split('.', 2)[-1]}"
-        global_var_data['voi_storage_num'] = commonFixed.get('voiResourceSize', 0)
-        global_var_data['vdi_storage_num'] = commonFixed.get('blockStorageSize', 0)
-        global_var_data['cloud_disk_num'] = commonFixed.get('shareDiskSize', 0)
-        global_var_data['net_disk_num'] = commonFixed.get('netDiskSize', 0)
         global_var_data['enable_ceph'] = commonFixed.get('cephServiceFlag', False)
         global_var_data['enable_local'] = commonFixed.get('localServiceFlag', False)
         global_var_data['only_deploy_voi'] = False
@@ -95,7 +91,11 @@ class Preview(Resource, DeployPreview):
             'cephVolumeData': [],
             'cephVolumeCacheData': [],
             'localVolumeData': [],
-            'nodeType': []
+            'nodeType': [],
+            'vdiResourceSize': "",
+            'voiResourceSize': "",
+            'shareDiskSize': "",
+            'isoResourceSize': ""
         }
         nodes_info = []
 
@@ -103,6 +103,10 @@ class Preview(Resource, DeployPreview):
             host_vars1 = host_vars | {
                 'nodeIP': node['nodeIP'],
                 'nodeName': node['nodeName'],
+                'vdiResourceSize': node.get('blockStorageSize', 0), 
+                'voiResourceSize': node.get('voiResourceSize', 0),
+                'shareDiskSize': node.get('shareDiskSize', 0),
+                'isoResourceSize': node.get('isoResourceSize', 0)
             }
             card_info = self._netcard_classify_build(node['networkCards'])
             storage_info = self._storage_classify_build(node['storages'])
@@ -117,7 +121,7 @@ class Preview(Resource, DeployPreview):
                 'cephVolumeData': storage_info['ceph_volume_data'],
                 'cephVolumeCacheData': storage_info['ceph_volume_cache_data'],
                 'localVolumeData': storage_info['local_volume_data'],
-                'nodeType': node['nodeType'],
+                'nodeType': node['nodeType']
             }
 
             nodes_info.append(host_vars1)

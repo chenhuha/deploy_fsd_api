@@ -1,4 +1,4 @@
-PORT = 1236
+PORT = 2236
 DEBUG = True
 
 # log 存放的目录
@@ -15,7 +15,7 @@ NODE_PASS = 'Troila12#$'
 ETC_EXAMPLE_PATH = '/root/deploy/kly-deploy/etc_example/'
 
 # 模板存放路径
-TEMPLATE_PATH = '/root/deploy/kly-deploy-api/templates/'
+TEMPLATE_PATH = '/root/caotingv/kly-deploy-api/templates/'
 
 # shell 脚本存放路径
 SCRIPT_PATH = '/root/deploy/kly-deploy-api/scripts'
