@@ -60,7 +60,9 @@ class Preview(Resource, DeployPreview):
         if len(service_type) == 1 and service_type[0] == 'VOI':
             fsd_deploy_mode = 'voi'
             global_var_data['only_deploy_voi'] = True
-            global_var_data['voi_data_device'] = self.get_voi_data_device(previews)
+            if len(node['networkCards']) == 1:
+                global_var_data['enable_single_net'] = True
+
         elif len(service_type) == 1 and service_type[0] == 'VDI':
             fsd_deploy_mode = 'vdi'
         else:
@@ -240,10 +242,3 @@ class Preview(Resource, DeployPreview):
                 storage_data['local_volume_data'].append(disk_name)
 
         return storage_data
-
-    def get_voi_data_device(self, previews):
-        for node in previews['nodes']:
-            for storage in node['storages']:
-                if storage['purpose'] == 'VOIDATA':
-                    return '/dev/' + storage['name']
-        return ""
