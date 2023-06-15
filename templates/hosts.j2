@@ -1,8 +1,7 @@
 [allnodes]
 {% for node in nodes %}
-{{ node.nodeIP }} ansible_ssh_extra_args='-o StrictHostKeyChecking=no' hostname={{ node.nodeName }} api_interface={{ node.managementCard }} ceph_public_interface={{ node.storagePublicCard }} ceph_cluster_interface={{ node.storageClusterCard }} flat_network_interface="{{ node.flatManagementList }}" vlan_network_interface="{{ node.vlanManagementDict }}" ceph_volume_data="{{ node.cephVolumeData }}" bcache_map_list="{{ node.cephVolumeCacheData }}" nic_info="{{ node.nicInfo }}" lvm_pv_device="{{ node.lvmVolumeData }}" local_device="{{ node.localVolumeData }}" external_manage_ip="{{ node.nodeIP }}" vdi_storage_num="{{ node.vdiResourceSize }}" voi_storage_num="{{ node.voiResourceSize }}" vdi_file_storage_num="{{ node.isoResourceSize }}" cloud_disk_num="{{ node.shareDiskSize }}"
+{{ node.nodeIP }} ansible_ssh_extra_args='-o StrictHostKeyChecking=no' hostname={{ node.nodeName }} api_interface={{ node.managementCard }} ceph_public_interface={{ node.storagePublicCard }} ceph_cluster_interface={{ node.storageClusterCard }} flat_network_interface="{{ node.flatManagementList }}" vlan_network_interface="{{ node.vlanManagementDict }}" ceph_volume_data="{{ node.cephVolumeData }}" bcache_map_list="{{ node.cephVolumeCacheData }}" nic_info="{{ node.nicInfo }}" lvm_pv_device="{{ node.lvmVolumeData }}" local_device="{{ node.localVolumeData }}" external_manage_ip="{{ node.nodeIP }}" vdi_storage_num={{ node.vdiResourceSize }} voi_storage_num={{ node.voiResourceSize }} vdi_file_storage_num={{ node.isoResourceSize }} cloud_disk_num={{ node.shareDiskSize }}
 {% endfor %}
-
 
 [control]
 {% for node in nodes %}
