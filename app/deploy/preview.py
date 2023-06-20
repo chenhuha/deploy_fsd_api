@@ -60,7 +60,7 @@ class Preview(Resource, DeployPreview):
         if len(service_type) == 1 and service_type[0] == 'VOI':
             fsd_deploy_mode = 'voi'
             global_var_data['only_deploy_voi'] = True
-            if len(node['networkCards']) == 1:
+            if len(previews['nodes'][0]['networkCards']) == 1:
                 global_var_data['enable_single_net'] = True
 
         elif len(service_type) == 1 and service_type[0] == 'VDI':
@@ -96,6 +96,7 @@ class Preview(Resource, DeployPreview):
             'nodeType': [],
             'vdiResourceSize': "",
             'voiResourceSize': "",
+            'cephResourceSize': "",
             'shareDiskSize': "",
             'isoResourceSize': ""
         }
@@ -107,6 +108,7 @@ class Preview(Resource, DeployPreview):
                 'nodeName': node['nodeName'],
                 'vdiResourceSize': node.get('blockStorageSize', 0), 
                 'voiResourceSize': node.get('voiResourceSize', 0),
+                'cephResourceSize': node.get('cephResourceSize', 0),
                 'shareDiskSize': node.get('shareDiskSize', 0),
                 'isoResourceSize': node.get('isoResourceSize', 0)
             }
