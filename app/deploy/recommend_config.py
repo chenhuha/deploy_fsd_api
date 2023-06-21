@@ -53,7 +53,7 @@ class ReckRecommendConfigCommon(Resource, DeployCount):
                 len(nodes), service_type, ceph_copy_num_default, pg_all)
 
         if local_service_flag:
-            data['localSizeMax'] = self.calculate_local_storage(len(nodes))
+            data['localSizeMax'] = self.calculate_local_storage()
 
         return types.DataModel().model(code=0, data=data)
 
