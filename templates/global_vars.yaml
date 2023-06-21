@@ -4,6 +4,7 @@ system_type: '{% if ansible_architecture == "x86_64" %}x86{% else %}{{ ansible_a
 docker_namespace_name: klcloud_{{ system_type }}
 docker_image_repository: "{{ docker_register_domain }}/{{ docker_namespace_name }}"
 docker_image_tag: latest
+docker_network: 169.17.0.0/16
 #配置文件目录
 config_directory: "/etc/klcloud"
 
@@ -81,7 +82,7 @@ enable_emqx: true
 enable_libvirt: true
 enable_trochilus: true
 enable_prometheus: true
-enable_pushgateway: "{% only_deploy_voi | bool %}false{% else %}true{% endif %}"
+enable_pushgateway: "{% if only_deploy_voi | bool %}false{% else %}true{% endif %}"
 enable_guest_service: "{% if only_deploy_voi | bool %}false{% else %}true{% endif %}"
 enable_fsd: true
 enable_btserver: "{% if fsd_deploy_mode == 'vdi' %}false{% else %}true{% endif %}"
@@ -89,7 +90,8 @@ enable_lvm: false
 enable_ceph: false
 # 本地存储
 enable_local: true
-enable_glusterfs: '{% if enable_local | bool and groups["glusterfs"] | length > 1 and enable_ceph | bool == false %}true{% else %}false{% endif %}'
+enable_glusterfs: '{% if enable_local | bool and groups["glusterfs"] | length > 1 %}true{% else %}false{% endif %}'
+enable_seafile: '{% if deploy_edu | bool %}true{% else %}false{% endif %}'
 
 ##########
 # VOI 配置
@@ -115,7 +117,7 @@ share_mount_dir: "/opt/share"
 ceph_rbd_secret_uuid: e2338e01-6f82-4236-885b-056847028c77
 ceph_rbd_admin_user: client.admin
 hugepages_size: 2M
-enable_hugepages: "{% if only_deploy_voi | bool or deploy_edu | bool %}false{% else %}true{% endif %}"
+enable_hugepages: "{% if only_deploy_voi | bool %}false{% else %}true{% endif %}"
 libvirt_tag: 2.0.3
 guest_service_tag: 2.0.3
 coredump_img_file_path: /opt/coredump
@@ -207,6 +209,7 @@ trochilus_external_agent_listen_port: 9002
 trochilus_internal_agent_listen_port: 19002
 trochilus_base_path: "{{ desktop_mount_dir }}"
 trochilus_voi_base_path: "{{ desktop_mount_dir }}/voi"
+trochilus_vdi_base_path: "{{ desktop_mount_dir }}/local_disks"
 trochilus_tag: 2.0.3
 virt_v2v_tag: latest
 # 如果vdi盒子和管理网不在同一个网段，就填管理网网关ip。如果vdi盒子和管理网在同一个网段，就啥也不填
@@ -255,16 +258,12 @@ fsd_policy_codeRateRange: 1,100
 fsd_biz_parameter_appSize: 1024
 # voi 部署场景 [edu，med，common] 当deploy_edu_voi开启时 生效
 # 1. edu 教育
-# 2. med 医疗
-# 3. common 办公
+# 2. common 办公
 fsd_voi_version: edu
 
 tdesktop_path_name: 
-#  - /opt/offline/Tdesktop-app-ubu-x86-64_v2.0.2.n001_20230426-release.deb
   - /opt/offline/UOS_X86-TDesktop.deb
   - /opt/offline/Win-TDesktop.exe
-#  - /opt/offline/tdesktop-dingsheng-rk3568_v2.0.2.n001_20230426-release.apk
-
 
 ##################
 # Samba
@@ -292,3 +291,13 @@ btserver_tag: 2.0.3
 ###################
 gluster_metadata_path: "/data"
 share_metadata_path: "{{ gluster_metadata_path }}/share_data"
+
+## seaflie
+seafile_mariadb_password: "60738ab7c0ba6413a7bc2304c756d328"
+seafile_port: 8000
+seafile_fileserver_port: 8082
+seafile_username: admin
+seafile_flavor: 50
+seafile_admin_pass: "Troila"
+seafile_admin_e: "admin@seafile.local"
+seafile_default_tag: "latest"
