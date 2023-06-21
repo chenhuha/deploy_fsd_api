@@ -55,6 +55,7 @@ class Preview(Resource, DeployPreview):
         global_var_data['enable_ceph'] = commonFixed.get('cephServiceFlag', False)
         global_var_data['enable_local'] = commonFixed.get('localServiceFlag', False)
         global_var_data['only_deploy_voi'] = False
+        global_var_data['seafile_flavor'] = commonFixed['seafileFlavor']
 
         service_type = previews['serviceType']
         if len(service_type) == 1 and service_type[0] == 'VOI':
