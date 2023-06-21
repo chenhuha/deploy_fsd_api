@@ -26,14 +26,16 @@ from extension.extension import Extension
 from extension.extend_history import ExtendHistory
 from extension.status import ExtendStatus
 
+from docs import register_docs_routes
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource
-from flask_cors import CORS
+
 
 app = Flask(__name__)
 api = Api(app)
 app.config.from_object('config')
+app.template_folder = app.config['TEMPLATE_PATH']
 CORS(app, supports_credentials=True)
 
 # Configuration logger
@@ -48,12 +50,13 @@ logging.basicConfig(
     level=logging.DEBUG,
     format=log_format,
 )
+# docs
+register_docs_routes(app)
 
 # get version
 class Version(Resource):
     def get(self):
         return {'version': 'v1.0.0'}
-
 
 # Actually setup the Api resource routing here
 api.add_resource(Version, '/')
