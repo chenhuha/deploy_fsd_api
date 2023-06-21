@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Markdown Files</title>
+</head>
+<body>
+    <h1>Markdown Files</h1>
+    <ul>
+        {% for file in files %}
+        <li><a href="/docs/{{ file[0] }}/{{ file[1] }}">{{ file[1] }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
